@@ -38,18 +38,25 @@ alias dstring = immutable(dchar)[];
 
 version (LDC)
 {
-    // Layout of this struct must match __gnuc_va_list for C ABI compatibility.
-    // Defined here for LDC as it is referenced from implicitly generated code
-    // for D-style variadics, etc., and we do not require people to manually
-    // import core.vararg like DMD does.
     version (X86_64)
     {
-        struct __va_list_tag
+        version (Windows)
         {
-            uint offset_regs = 6 * 8;
-            uint offset_fpregs = 6 * 8 + 8 * 16;
-            void* stack_args;
-            void* reg_args;
+            version = LDC_Win64;
+        }
+        else
+        {
+            // Layout of this struct must match __gnuc_va_list for C ABI compatibility.
+            // Defined here for LDC as it is referenced from implicitly generated code
+            // for D-style variadics, etc., and we do not require people to manually
+            // import core.vararg like DMD does.
+            struct __va_list_tag
+            {
+                uint offset_regs = 6 * 8;
+                uint offset_fpregs = 6 * 8 + 8 * 16;
+                void* stack_args;
+                void* reg_args;
+            }
         }
     }
     else version (AArch64)
@@ -2314,14 +2321,24 @@ class TypeInfo_Struct : TypeInfo
 
     version (X86_64)
     {
-        override int argTypes(out TypeInfo arg1, out TypeInfo arg2)
+        version (LDC_Win64)
         {
-            arg1 = m_arg1;
-            arg2 = m_arg2;
-            return 0;
+            override int argTypes(out TypeInfo arg1, out TypeInfo arg2)
+            {
+                assert(0);
+            }
         }
-        TypeInfo m_arg1;
-        TypeInfo m_arg2;
+        else
+        {
+            override int argTypes(out TypeInfo arg1, out TypeInfo arg2)
+            {
+                arg1 = m_arg1;
+                arg2 = m_arg2;
+                return 0;
+            }
+            TypeInfo m_arg1;
+            TypeInfo m_arg2;
+        }
     }
     immutable(void)* m_RTInfo;                // data for precise GC
 }
