@@ -108,8 +108,8 @@ else version (CppRuntime_Gcc)
 
     class type_info
     {
-        void dtor1();                           // consume destructor slot in vtbl[]
-        void dtor2();                           // consume destructor slot in vtbl[]
+        void dtor1() { }                        // consume destructor slot in vtbl[]
+        void dtor2() { }                        // consume destructor slot in vtbl[]
         final const(char)* name()() const nothrow {
             return _name[0] == '*' ? _name + 1 : _name;
         }
