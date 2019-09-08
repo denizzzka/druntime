@@ -74,12 +74,13 @@ version (GenericBaseException)
     {
     @nogc:
         ///
-        this() nothrow {}
-        ///
-        ~this() nothrow {} // HACK: this should extern, but then we have link errors!
+        this() nothrow {} // defined inline in C++ header
 
         ///
-        const(char)* what() const nothrow { return "unknown"; } // HACK: this should extern, but then we have link errors!
+        ~this() nothrow;
+
+        ///
+        const(char)* what() const nothrow;
 
     protected:
         this(const(char)*, int = 1) nothrow { this(); } // compat with MS derived classes
@@ -94,10 +95,10 @@ else version (CppRuntime_Microsoft)
         ///
         this(const(char)* message = "unknown", int = 1) nothrow { msg = message; }
         ///
-        extern(D) ~this() nothrow {}
+        ~this() nothrow {}
 
         ///
-        extern(D) const(char)* what() const nothrow { return msg != null ? msg : "unknown exception"; }
+        const(char)* what() const nothrow { return msg != null ? msg : "unknown exception"; }
 
         // TODO: do we want this? exceptions are classes... ref types.
 //        final ref exception opAssign(ref const(exception) e) nothrow { msg = e.msg; return this; }
@@ -118,5 +119,13 @@ class bad_exception : exception
 {
 @nogc:
     ///
-    this(const(char)* message = "bad exception") { super(message); }
+    this(const(char)* message = "bad exception") nothrow { super(message); }
+
+    version (GenericBaseException)
+    {
+        ///
+        ~this() nothrow;
+        ///
+        override const(char)* what() const nothrow;
+    }
 }

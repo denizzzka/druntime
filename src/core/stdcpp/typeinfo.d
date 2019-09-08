@@ -60,6 +60,8 @@ else version (CppRuntime_Microsoft)
 
     extern (C++, "std"):
 
+  version (LDC) { /* not required for VS 2017+ */ } else
+  {
     struct __type_info_node
     {
         void* _MemPtr;
@@ -67,15 +69,19 @@ else version (CppRuntime_Microsoft)
     }
 
     extern __gshared __type_info_node __type_info_root_node;
+  }
 
     class type_info
     {
         //virtual ~this();
-        void dtor() { }     // reserve slot in vtbl[]
+        void dtor() nothrow { }     // reserve slot in vtbl[]
         //bool operator==(const type_info rhs) const;
         //bool operator!=(const type_info rhs) const;
-        final bool before(const type_info rhs) const;
-        final const(char)* name(__type_info_node* p = &__type_info_root_node) const;
+        final bool before(const type_info rhs) const nothrow;
+        version (LDC) // VS 2017+ signature
+            final const(char)* name() const nothrow;
+        else
+            final const(char)* name(__type_info_node* p = &__type_info_root_node) const nothrow;
 
     private:
         void* pdata;
@@ -85,13 +91,13 @@ else version (CppRuntime_Microsoft)
 
     class bad_cast : exception
     {
-        this(const(char)* msg = "bad cast");
+        this(const(char)* msg = "bad cast") nothrow { super(msg); }
         //virtual ~this();
     }
 
     class bad_typeid : exception
     {
-        this(const(char)* msg = "bad typeid");
+        this(const(char)* msg = "bad typeid") nothrow { super(msg); }
         //virtual ~this();
     }
 }
@@ -131,16 +137,16 @@ else version (CppRuntime_Gcc)
 
     class bad_cast : exception
     {
-        this();
-        //~this();
-        override const(char)* what() const;
+        this() nothrow {}
+        ~this() nothrow;
+        override const(char)* what() const nothrow;
     }
 
     class bad_typeid : exception
     {
-        this();
-        //~this();
-        override const(char)* what() const;
+        this() nothrow {}
+        ~this() nothrow;
+        override const(char)* what() const nothrow;
     }
 }
 else
