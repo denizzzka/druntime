@@ -347,6 +347,10 @@ else version (CRuntime_UClibc)
         L_tmpnam     = 20
     }
 }
+else version (DruntimeAbstractLibc)
+{
+    public import libc.stdio;
+}
 else
 {
     static assert( false, "Unsupported platform" );
@@ -792,6 +796,10 @@ else version (CRuntime_UClibc)
     ///
     alias shared(__STDIO_FILE_STRUCT) FILE;
 }
+else version (DruntimeAbstractLibc)
+{
+    public import libc.stdio;
+}
 else
 {
     static assert( false, "Unsupported platform" );
@@ -1125,6 +1133,10 @@ else version (CRuntime_UClibc)
     extern shared FILE* stdout;
     ///
     extern shared FILE* stderr;
+}
+else version (DruntimeAbstractLibc)
+{
+    public import libc.stdio;
 }
 else
 {
@@ -1740,6 +1752,10 @@ else version (CRuntime_UClibc)
     ///
     pragma(printf)
     int  vsnprintf(scope char* s, size_t n, scope const char* format, va_list arg);
+}
+else version (DruntimeAbstractLibc)
+{
+    public import libc.stdio;
 }
 else
 {
