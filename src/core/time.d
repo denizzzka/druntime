@@ -79,7 +79,7 @@ else version (Posix)
 import core.sys.posix.time;
 import core.sys.posix.sys.time;
 }
-else version (DruntimeAbstractLibc)
+else version (CRuntime_Abstract)
 {
     public import external.core.time;
 }
@@ -334,7 +334,7 @@ else version (Solaris) enum ClockType
     second = 6,
     threadCPUTime = 7,
 }
-else version (DruntimeAbstractLibc)
+else version (CRuntime_Abstract)
 {
     public import external.core.time: ClockType;
 }
