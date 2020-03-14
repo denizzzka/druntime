@@ -15,9 +15,6 @@
  */
 module core.sync.mutex;
 
-version(Posix) version = AnyLibc;
-version(CRuntime_Abstract) version = AnyLibc;
-
 public import core.sync.exception;
 
 version (Windows)
@@ -26,13 +23,15 @@ version (Windows)
         EnterCriticalSection, InitializeCriticalSection, LeaveCriticalSection,
         TryEnterCriticalSection+/;
 }
-else version (Posix)
-{
-    private import core.sys.posix.pthread;
-}
 else version (DruntimeAbstractRt)
 {
-    private import external.core.pthread;
+    version = AnyLibc;
+}
+else version (Posix)
+{
+    version = AnyLibc;
+
+    private import core.sys.posix.pthread;
 }
 else
 {
@@ -46,7 +45,10 @@ else
 // void unlock();
 // bool tryLock();
 ////////////////////////////////////////////////////////////////////////////////
-
+version (DruntimeAbstractRt)
+    public import external.core.mutex;
+else
+{
 
 /**
  * This class represents a general purpose, recursive mutex.
@@ -390,6 +392,8 @@ unittest
     assert(!mtx.tryLock_nothrow());
 
     free(cast(void*) mtx);
+}
+
 }
 
 // Test single-thread (non-shared) use.

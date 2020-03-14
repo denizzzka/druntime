@@ -87,7 +87,10 @@ version (Posix)
 package(core.thread)
 {
     static immutable size_t PAGESIZE;
-    version (Posix) static immutable size_t PTHREAD_STACK_MIN;
+    version (Posix)
+        static immutable size_t PTHREAD_STACK_MIN;
+    else version (DruntimeAbstractRt)
+        static immutable size_t PTHREAD_STACK_MIN;
 }
 
 shared static this()
@@ -104,6 +107,13 @@ shared static this()
     {
         PAGESIZE = cast(size_t)sysconf(_SC_PAGESIZE);
         PTHREAD_STACK_MIN = cast(size_t)sysconf(_SC_THREAD_STACK_MIN);
+    }
+    else version (DruntimeAbstractRt)
+    {
+        static import external.core.pthread;
+
+        PAGESIZE = external.core.pthread.PAGESIZE;
+        PTHREAD_STACK_MIN = external.core.pthread.PTHREAD_STACK_MIN;
     }
     else
     {
@@ -622,6 +632,10 @@ else version (Posix)
         }
     }
 }
+else version (DruntimeAbstractRt)
+{
+    public import external.core.pthread;
+}
 else
 {
     // NOTE: This is the only place threading versions are checked.  If a new
@@ -645,6 +659,9 @@ else
  * A new thread may be created using either derivation or composition, as
  * in the following example.
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread: Thread;
+else
 class Thread
 {
     ///////////////////////////////////////////////////////////////////////////
@@ -3887,9 +3904,12 @@ unittest
  */
 version (Windows)
     alias ThreadID = uint;
-else
-version (Posix)
+else version (Posix)
     alias ThreadID = pthread_t;
+else version (DruntimeAbstractRt)
+{
+    import external.core.pthread : ThreadID;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // lowlovel threading support
