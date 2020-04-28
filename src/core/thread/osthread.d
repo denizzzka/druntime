@@ -110,10 +110,6 @@ shared static this()
     }
     else version (DruntimeAbstractRt)
     {
-        static import external.core.pthread;
-
-        PAGESIZE = external.core.pthread.PAGESIZE;
-        PTHREAD_STACK_MIN = external.core.pthread.PTHREAD_STACK_MIN;
     }
     else
     {
@@ -2146,6 +2142,9 @@ version (Posix)
  * garbage collector on startup and before any other thread routines
  * are called.
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread : thread_init;
+else
 extern (C) void thread_init() @nogc
 {
     // NOTE: If thread_init itself performs any allocations then the thread
@@ -2241,6 +2240,9 @@ extern (C) void _d_monitordelete_nogc(Object h) @nogc;
  * Terminates the thread module. No other thread routine may be called
  * afterwards.
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread : thread_term;
+else
 extern (C) void thread_term() @nogc
 {
     assert(_mainThreadStore.ptr is cast(void*) Thread.sm_main);
@@ -2269,6 +2271,9 @@ extern (C) void thread_term() @nogc
 /**
  *
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread : thread_isMainThread;
+else
 extern (C) bool thread_isMainThread() nothrow @nogc
 {
     return Thread.getThis() is Thread.sm_main;
@@ -2285,6 +2290,9 @@ extern (C) bool thread_isMainThread() nothrow @nogc
  *
  *       extern (C) void rt_moduleTlsCtor();
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread : thread_attachThis;
+else
 extern (C) Thread thread_attachThis()
 {
     if (auto t = Thread.getThis())
@@ -2293,6 +2301,8 @@ extern (C) Thread thread_attachThis()
     return attachThread(new Thread());
 }
 
+version (DruntimeAbstractRt) {}
+else
 private Thread attachThread(Thread thisThread) @nogc
 {
     Thread.Context* thisContext = &thisThread.m_main;
@@ -2463,6 +2473,9 @@ unittest
  * Returns:
  *  The thread object associated with the thread identifier, null if not found.
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread : thread_findByAddr;
+else
 static Thread thread_findByAddr( ThreadID addr )
 {
     Thread.slock.lock_nothrow();
@@ -2503,6 +2516,9 @@ extern (C) void thread_setThis(Thread t) nothrow @nogc
  * performing successive scans through the thread list until a scan consists
  * of only daemon threads.
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread : thread_joinAll;
+else
 extern (C) void thread_joinAll()
 {
  Lagain:
@@ -2544,6 +2560,14 @@ extern (C) void thread_joinAll()
  * Performs intermediate shutdown of the thread module.
  */
 shared static ~this()
+{
+    thread_intermediateShutdown();
+}
+
+version (DruntimeAbstractRt)
+    public import external.core.pthread : thread_intermediateShutdown;
+else
+private void thread_intermediateShutdown() nothrow @nogc
 {
     // NOTE: The functionality related to garbage collection must be minimally
     //       operable after this dtor completes.  Therefore, only minimal
