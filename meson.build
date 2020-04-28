@@ -4,8 +4,6 @@ phobos_dep = declare_dependency(
     include_directories: ['/usr/include/dmd/phobos/']
 )
 
-include = include_directories('src', 'stm32_druntime_backend')
-
 src = [
     #'src/core/internal/entrypoint.d',
     'src/core/demangle.d',
@@ -75,10 +73,8 @@ typeinfo_files = [
     'src/rt/typeinfo/ti_wchar.d'
 ]
 
-druntime_dep = library(
-    'druntime',
+druntime_dep = declare_dependency(
     sources: [src, typeinfo_files],
-    include_directories: include,
-    dependencies: phobos_dep,
-    d_args: ['-defaultlib='],
+    include_directories: include_directories('src'),
+    dependencies: [ phobos_dep ],
 )
