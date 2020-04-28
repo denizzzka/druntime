@@ -2773,6 +2773,8 @@ private __gshared uint suspendDepth = 0;
  * Returns:
  *  Whether the thread is now suspended (true) or terminated (false).
  */
+version (DruntimeAbstractRt){}
+else
 private bool suspend( Thread t ) nothrow
 {
     Duration waittime = dur!"usecs"(10);
@@ -2984,6 +2986,9 @@ private bool suspend( Thread t ) nothrow
  * Throws:
  *  ThreadError if the suspend operation fails for a running thread.
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread: thread_suspendAll;
+else
 extern (C) void thread_suspendAll() nothrow
 {
     // NOTE: We've got an odd chicken & egg problem here, because while the GC
@@ -3140,6 +3145,9 @@ private void resume( Thread t ) nothrow
  * Throws:
  *  ThreadError if the resume operation fails for a running thread.
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread: thread_resumeAll;
+else
 extern (C) void thread_resumeAll() nothrow
 in
 {
@@ -3191,6 +3199,9 @@ alias ScanAllThreadsTypeFn = void delegate(ScanType, void*, void*) nothrow; /// 
  * In:
  *  This routine must be preceded by a call to thread_suspendAll.
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread: thread_scanAllType;
+else
 extern (C) void thread_scanAllType( scope ScanAllThreadsTypeFn scan ) nothrow
 in
 {
@@ -3201,7 +3212,8 @@ do
     callWithStackShell(sp => scanAllTypeImpl(scan, sp));
 }
 
-
+version (DruntimeAbstractRt){}
+else
 private void scanAllTypeImpl( scope ScanAllThreadsTypeFn scan, void* curStackTop ) nothrow
 {
     Thread  thisThread  = null;
@@ -3508,6 +3520,9 @@ alias IsMarkedDg = int delegate( void* addr ) nothrow; /// The isMarked callback
  * In:
  *  This routine must be called just prior to resuming all threads.
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread: thread_processGCMarks;
+else
 extern(C) void thread_processGCMarks( scope IsMarkedDg isMarked ) nothrow
 {
     for ( Thread t = Thread.sm_tbeg; t; t = t.next )
@@ -3610,6 +3625,10 @@ version (LDC_Windows)
             static assert(false, "Architecture not supported.");
     }
 }
+version (DruntimeAbstractRt)
+{
+    public import external.core.pthread: getStackBottom;
+}
 else
 package(core.thread) void* getStackBottom() nothrow @nogc
 {
@@ -3709,6 +3728,9 @@ do
  * Returns:
  *  The address of the stack bottom.
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread: thread_stackBottom;
+else
 extern (C) void* thread_stackBottom() nothrow @nogc
 in
 {
@@ -3937,6 +3959,8 @@ else version (DruntimeAbstractRt)
 
 ///////////////////////////////////////////////////////////////////////////////
 // lowlovel threading support
+version (DruntimeAbstractRt){}
+else
 private
 {
     struct ll_ThreadData
@@ -4136,6 +4160,9 @@ private
  * Returns: the platform specific thread ID of the new thread. If an error occurs, `ThreadID.init`
  *  is returned.
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread : createLowLevelThread;
+else
 ThreadID createLowLevelThread(void delegate() nothrow dg, uint stacksize = 0,
                               void delegate() nothrow cbDllUnload = null) nothrow @nogc
 {
@@ -4260,6 +4287,9 @@ void joinLowLevelThread(ThreadID tid) nothrow @nogc
  *
  * Returns: `true` if the thread was created by `createLowLevelThread` and is still running.
  */
+version (DruntimeAbstractRt)
+    public import external.core.pthread : findLowLevelThread;
+else
 bool findLowLevelThread(ThreadID tid) nothrow @nogc
 {
     lowlevelLock.lock_nothrow();
