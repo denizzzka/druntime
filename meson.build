@@ -11,6 +11,7 @@ src = [
     'src/core/gc/registry.d',
     'src/core/demangle.d',
     'src/core/exception.d',
+    'src/core/internal/abort.d',
     'src/core/internal/array/capacity.d',
     'src/core/internal/array/equality.d',
     'src/core/internal/array/utils.d',

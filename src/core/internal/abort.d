@@ -4,6 +4,11 @@ module core.internal.abort;
  * Use instead of assert(0, msg), since this does not print a message for -release compiled
  * code, and druntime is -release compiled.
  */
+version (DruntimeAbstractRt)
+{
+    public import external.core.abort : abort;
+}
+else
 void abort(scope string msg, scope string filename = __FILE__, size_t line = __LINE__) @nogc nothrow @safe
 {
     import core.stdc.stdlib: c_abort = abort;
