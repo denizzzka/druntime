@@ -23,6 +23,7 @@ src = [
     'src/core/memory.d',
     'src/core/time.d',
     'src/core/thread/osthread.d',
+    'src/core/thread/package.d',
     'src/gc/impl/manual/gc.d',
     'src/gc/impl/proto/gc.d',
     'src/gc/proxy.d',

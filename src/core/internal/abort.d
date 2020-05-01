@@ -6,7 +6,12 @@ module core.internal.abort;
  */
 version (DruntimeAbstractRt)
 {
-    public import external.core.abort : abort;
+    static import external.core.abort;
+
+    void abort(scope string msg, scope string filename = __FILE__, size_t line = __LINE__) @nogc nothrow @safe
+    {
+        return external.core.abort.abort(msg, filename, line);
+    }
 }
 else
 void abort(scope string msg, scope string filename = __FILE__, size_t line = __LINE__) @nogc nothrow @safe
