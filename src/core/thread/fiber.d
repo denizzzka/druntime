@@ -154,6 +154,11 @@ private
     import core.exception : onOutOfMemoryError;
     import core.stdc.stdlib : abort;
 
+    version (DruntimeAbstractRt)
+    {
+        public import external.core.fiber : fiber_entryPoint;
+    }
+    else
     extern (C) void fiber_entryPoint() nothrow /* LDC */ @assumeUsed
     {
         Fiber   obj = Fiber.getThis();
@@ -736,6 +741,11 @@ private
  *
  * Authors: Based on a design by Mikola Lysenko.
  */
+ version (DruntimeAbstractRt)
+{
+    public import external.core.fiber : Fiber;
+}
+else
 class Fiber
 {
     ///////////////////////////////////////////////////////////////////////////
