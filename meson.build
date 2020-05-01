@@ -41,6 +41,7 @@ src = [
     'src/rt/minfo.d',
     'src/rt/monitor_.d',
     'src/rt/profilegc.d',
+    'src/rt/tlsgc.d',
     'src/rt/util/container/common.d',
     #'src/rt/deh.d',
     #'src/rt/dmain2.d',
