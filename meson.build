@@ -6,6 +6,8 @@ phobos_dep = declare_dependency(
 
 src = [
     #'src/core/internal/entrypoint.d',
+    'src/core/gc/gcinterface.d',
+    'src/core/gc/registry.d',
     'src/core/demangle.d',
     'src/core/exception.d',
     'src/core/internal/array/capacity.d',
@@ -14,6 +16,7 @@ src = [
     'src/core/internal/string.d',
     'src/core/internal/traits.d',
     'src/core/memory.d',
+    'src/core/time.d',
     'src/core/thread/osthread.d',
     'src/gc/impl/manual/gc.d',
     'src/gc/proxy.d',
@@ -26,6 +29,7 @@ src = [
     'src/rt/lifetime.d',   
     'src/rt/minfo.d',
     'src/rt/monitor_.d',
+    'src/rt/util/container/common.d',
     #'src/rt/deh.d',
     #'src/rt/dmain2.d',
     #'src/rt/memory.d',
