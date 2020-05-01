@@ -1371,6 +1371,11 @@ private:
     // Initialize the allocated stack.
     // Look above the definition of 'class Fiber' for some information about the implementation of this routine
     //
+    version (DruntimeAbstractRt)
+    {
+        public import external.core.fiber : initStack;
+    }
+    else
     final void initStack() nothrow @nogc
     in
     {
