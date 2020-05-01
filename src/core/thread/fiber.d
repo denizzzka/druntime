@@ -741,11 +741,6 @@ private
  *
  * Authors: Based on a design by Mikola Lysenko.
  */
- version (DruntimeAbstractRt)
-{
-    public import external.core.fiber : Fiber;
-}
-else
 class Fiber
 {
     ///////////////////////////////////////////////////////////////////////////

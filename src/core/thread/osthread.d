@@ -1689,20 +1689,8 @@ private:
     }
 
 package(core.thread):
-    static struct Context
-    {
-        void*           bstack,
-                        tstack;
 
-        /// Slot for the EH implementation to keep some state for each stack
-        /// (will be necessary for exception chaining, etc.). Opaque as far as
-        /// we are concerned here.
-        void*           ehContext;
-
-        Context*        within;
-        Context*        next,
-                        prev;
-    }
+    alias Context = core.thread.osthread.Context;
 
     Context             m_main;
     Context*            m_curr;
@@ -2029,6 +2017,21 @@ package(core.thread):
         //       to ensure that.
         slock.unlock_nothrow();
     }
+}
+
+struct Context
+{
+    void*           bstack,
+                    tstack;
+
+    /// Slot for the EH implementation to keep some state for each stack
+    /// (will be necessary for exception chaining, etc.). Opaque as far as
+    /// we are concerned here.
+    void*           ehContext;
+
+    Context*        within;
+    Context*        next,
+                    prev;
 }
 
 ///
