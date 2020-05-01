@@ -24,6 +24,7 @@ src = [
     'src/core/time.d',
     'src/core/thread/osthread.d',
     'src/gc/impl/manual/gc.d',
+    'src/gc/impl/proto/gc.d',
     'src/gc/proxy.d',
     'src/object.d',
     'src/rt/aaA.d',
