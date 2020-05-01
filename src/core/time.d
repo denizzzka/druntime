@@ -2083,6 +2083,12 @@ struct MonoTimeImpl(ClockType clockType)
     {
         enum clockArg = _posixClock(clockType);
     }
+    else version (DruntimeAbstractRt)
+    {
+        //~ public import external.core.time : clockType;
+
+        //~ enum clockArg = _posixClock(clockType);
+    }
     else
         static assert(0, "Unsupported platform");
 
@@ -2113,6 +2119,11 @@ struct MonoTimeImpl(ClockType clockType)
                         Mac OS X. It has not been tested whether it occurs on
                         either Windows or Linux.
       +/
+    version (DruntimeAbstractRt)
+    {
+        public import external.core.time : currTime;
+    }
+    else
     static @property MonoTimeImpl currTime() @trusted nothrow @nogc
     {
         if (ticksPerSecond == 0)
@@ -3361,6 +3372,11 @@ struct TickDuration
         Throws:
             $(D TimeException) if it fails to get the time.
       +/
+    version (DruntimeAbstractRt)
+    {
+        public import external.core.time : currSystemTick;
+    }
+    else
     static @property TickDuration currSystemTick() @trusted nothrow @nogc
     {
         import core.internal.abort : abort;
