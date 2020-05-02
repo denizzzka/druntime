@@ -1,4 +1,4 @@
-project('druntime', 'd')
+project('druntime', ['d', 'c'])
 
 phobos_dep = declare_dependency(
     include_directories: ['/usr/include/dmd/phobos/']
@@ -42,6 +42,7 @@ src = [
     'src/rt/cast_.d',
     'src/rt/config.d',
     'src/rt/critical_.d',
+    #'src/rt/deh.d',
     'src/rt/dmain2.d',
     'src/rt/dwarfeh.d',
     'src/rt/ehalloc.d',
@@ -55,7 +56,6 @@ src = [
     'src/rt/unwind.d',
     'src/rt/util/container/common.d',
     'src/rt/util/random.d',
-    #'src/rt/deh.d',
     'src/rt/sections.d',
     'src/rt/sections_ldc.d',
 ]
@@ -104,8 +104,18 @@ ldc_specific = [
     'src/rt/sections_ldc.d',
 ]
 
+ldc_c_lib = library(
+    'LDC C RT library',
+    [
+        'src/ldc/arm_unwind.c',
+    ],
+    #include_directories: ['source', 'source/bindings'],
+    #link_with: druntime_lib,
+)
+
 druntime_dep = declare_dependency(
     sources: [src, typeinfo_files, ldc_specific],
     include_directories: include_directories('src'),
     dependencies: [ phobos_dep ],
+    link_with: ldc_c_lib,
 )
