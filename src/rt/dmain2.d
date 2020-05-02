@@ -380,6 +380,15 @@ extern (C) int _d_run_main(int argc, char** argv, MainFunc mainFunc)
             totalArgsLength += arg.length;
         }
     }
+    else version (DruntimeAbstractRt)
+    {
+        import external.rt.dmain : createCLIargs;
+
+        size_t totalArgsLength;
+        char[][] args;
+
+        createCLIargs(argc, argv, args, totalArgsLength);
+    }
     else
         static assert(0);
 
