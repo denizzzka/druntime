@@ -58,7 +58,10 @@ src = [
     'src/rt/util/container/common.d',
     'src/rt/util/random.d',
     'src/rt/sections.d',
+    'src/rt/sections_android.d',
+    'src/rt/sections_elf_shared.d',
     'src/rt/sections_ldc.d',
+    'src/rt/sections_osx_x86.d',
 ]
 
 typeinfo_files = [
