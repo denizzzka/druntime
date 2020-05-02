@@ -79,10 +79,6 @@ else version (Posix)
 import core.sys.posix.time;
 import core.sys.posix.sys.time;
 }
-else version (CRuntime_Abstract)
-{
-    public import external.core.time;
-}
 
 version (OSX)
     version = Darwin;
@@ -334,7 +330,7 @@ else version (Solaris) enum ClockType
     second = 6,
     threadCPUTime = 7,
 }
-else version (CRuntime_Abstract)
+else version (DruntimeAbstractRt)
 {
     public import external.core.time: ClockType;
 }
@@ -2085,6 +2081,7 @@ struct MonoTimeImpl(ClockType clockType)
     }
     else version (DruntimeAbstractRt)
     {
+        //FIXME
         //~ public import external.core.time : clockType;
 
         //~ enum clockArg = _posixClock(clockType);
@@ -2119,11 +2116,6 @@ struct MonoTimeImpl(ClockType clockType)
                         Mac OS X. It has not been tested whether it occurs on
                         either Windows or Linux.
       +/
-    version (DruntimeAbstractRt)
-    {
-        public import external.core.time : currTime;
-    }
-    else
     static @property MonoTimeImpl currTime() @trusted nothrow @nogc
     {
         if (ticksPerSecond == 0)
@@ -2158,6 +2150,12 @@ struct MonoTimeImpl(ClockType clockType)
             return MonoTimeImpl(convClockFreq(ts.tv_sec * 1_000_000_000L + ts.tv_nsec,
                                               1_000_000_000L,
                                               ticksPerSecond));
+        }
+        else version (DruntimeAbstractRt)
+        {
+            import external.core.time : ticks;
+
+            return MonoTimeImpl(ticks);
         }
     }
 
