@@ -29,6 +29,7 @@ src = [
     'src/core/thread/fiber.d',
     'src/core/thread/osthread.d',
     'src/core/thread/package.d',
+    'src/core/stdc/errno.d',
     'src/gc/bits.d',
     'src/gc/impl/conservative/gc.d',
     'src/gc/impl/manual/gc.d',
@@ -53,8 +54,6 @@ src = [
     'src/rt/util/container/common.d',
     'src/rt/util/random.d',
     #'src/rt/deh.d',
-    #'src/rt/dmain2.d',
-    #'src/rt/memory.d',
     'src/rt/sections.d',
     'src/rt/sections_ldc.d',
 ]
