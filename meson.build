@@ -93,6 +93,7 @@ typeinfo_files = [
 ]
 
 ldc_specific = [
+    'src/rt/sections_ldc.d',
 ]
 
 druntime_dep = declare_dependency(
