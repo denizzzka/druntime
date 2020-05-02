@@ -27,6 +27,7 @@ src = [
     'src/core/thread/fiber.d',
     'src/core/thread/osthread.d',
     'src/core/thread/package.d',
+    'src/gc/impl/conservative/gc.d',
     'src/gc/impl/manual/gc.d',
     'src/gc/impl/proto/gc.d',
     'src/gc/proxy.d',
@@ -35,6 +36,7 @@ src = [
     'src/rt/arraycat.d',
     'src/rt/cast_.d',
     'src/rt/config.d',
+    'src/rt/dwarfeh.d',
     'src/rt/ehalloc.d',
     'src/rt/invariant.d',
     'src/rt/lifetime.d',   
@@ -91,7 +93,6 @@ typeinfo_files = [
 ]
 
 ldc_specific = [
-    'src/rt/dwarfeh.d',
 ]
 
 druntime_dep = declare_dependency(
