@@ -39,6 +39,7 @@ src = [
     'src/rt/arraycat.d',
     'src/rt/cast_.d',
     'src/rt/config.d',
+    'src/rt/dmain2.d',
     'src/rt/dwarfeh.d',
     'src/rt/ehalloc.d',
     'src/rt/invariant.d',
