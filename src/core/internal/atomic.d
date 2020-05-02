@@ -1155,10 +1155,6 @@ else version (GNU)
         private AtomicMutex* getAtomicMutex() pure @trusted @nogc nothrow @property;
     }
 }
-else version (CRuntime_Abstract)
-{
-    public import libc.stdatomic;
-}
 
 private:
 
