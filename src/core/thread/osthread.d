@@ -3956,9 +3956,7 @@ version (Windows)
 else version (Posix)
     alias ThreadID = pthread_t;
 else version (DruntimeAbstractRt)
-{
-    import external.core.pthread : ThreadID;
-}
+    public import external.core.pthread : ThreadID;
 
 ///////////////////////////////////////////////////////////////////////////////
 // lowlovel threading support
