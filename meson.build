@@ -42,7 +42,7 @@ src = [
     'src/rt/cast_.d',
     'src/rt/config.d',
     'src/rt/critical_.d',
-    #'src/rt/deh.d',
+    'src/rt/deh.d',
     'src/rt/deh_win64_posix.d',
     'src/rt/dmain2.d',
     'src/rt/dwarfeh.d',
