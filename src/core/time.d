@@ -2081,10 +2081,6 @@ struct MonoTimeImpl(ClockType clockType)
     }
     else version (DruntimeAbstractRt)
     {
-        //FIXME
-        //~ public import external.core.time : clockType;
-
-        //~ enum clockArg = _posixClock(clockType);
     }
     else
         static assert(0, "Unsupported platform");
@@ -2153,9 +2149,9 @@ struct MonoTimeImpl(ClockType clockType)
         }
         else version (DruntimeAbstractRt)
         {
-            import external.core.time : ticks;
+            import external.core.time : currTicks;
 
-            return MonoTimeImpl(ticks);
+            return MonoTimeImpl(currTicks);
         }
     }
 
