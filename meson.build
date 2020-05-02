@@ -45,6 +45,7 @@ src = [
     'src/rt/profilegc.d',
     'src/rt/tlsgc.d',
     'src/rt/util/container/common.d',
+    'src/rt/util/random.d',
     #'src/rt/deh.d',
     #'src/rt/dmain2.d',
     #'src/rt/memory.d',
