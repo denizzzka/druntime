@@ -90,8 +90,12 @@ typeinfo_files = [
     'src/rt/typeinfo/ti_wchar.d'
 ]
 
+ldc_specific = [
+    'src/rt/dwarfeh.d',
+]
+
 druntime_dep = declare_dependency(
-    sources: [src, typeinfo_files],
+    sources: [src, typeinfo_files, ldc_specific],
     include_directories: include_directories('src'),
     dependencies: [ phobos_dep ],
 )
