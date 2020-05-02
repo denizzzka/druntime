@@ -24,6 +24,10 @@ else version (Posix)
     import core.sys.posix.sys.types;
     import core.sys.posix.time;
 }
+else version (DruntimeAbstractRt)
+{
+    public import external.core.event : Event;
+}
 else
 {
     static assert(false, "Platform not supported");
@@ -68,6 +72,8 @@ struct ProcessFile
 }
 ---
  */
+version (DruntimeAbstractRt){}
+else
 struct Event
 {
 nothrow @nogc:
