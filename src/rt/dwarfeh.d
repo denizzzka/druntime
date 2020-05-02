@@ -13,7 +13,8 @@ module rt.dwarfeh;
 
 // debug = EH_personality;
 
-version (Posix):
+version (Windows){}
+else:
 
 import rt.dmain2: _d_print_throwable;
 import rt.unwind;
