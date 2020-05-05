@@ -630,7 +630,7 @@ else version (Posix)
 }
 else version (DruntimeAbstractRt)
 {
-    public import external.core.pthread;
+    public import external.core.thread;
 }
 else
 {
@@ -656,7 +656,7 @@ else
  * in the following example.
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread: Thread;
+    public import external.core.thread: Thread;
 else
 class Thread
 {
@@ -2146,7 +2146,7 @@ version (Posix)
  * are called.
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread : thread_init;
+    public import external.core.thread : thread_init;
 else
 extern (C) void thread_init() @nogc
 {
@@ -2244,7 +2244,7 @@ extern (C) void _d_monitordelete_nogc(Object h) @nogc;
  * afterwards.
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread : thread_term;
+    public import external.core.thread : thread_term;
 else
 extern (C) void thread_term() @nogc
 {
@@ -2275,7 +2275,7 @@ extern (C) void thread_term() @nogc
  *
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread : thread_isMainThread;
+    public import external.core.thread : thread_isMainThread;
 else
 extern (C) bool thread_isMainThread() nothrow @nogc
 {
@@ -2294,7 +2294,7 @@ extern (C) bool thread_isMainThread() nothrow @nogc
  *       extern (C) void rt_moduleTlsCtor();
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread : thread_attachThis;
+    public import external.core.thread : thread_attachThis;
 else
 extern (C) Thread thread_attachThis()
 {
@@ -2477,7 +2477,7 @@ unittest
  *  The thread object associated with the thread identifier, null if not found.
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread : thread_findByAddr;
+    public import external.core.thread : thread_findByAddr;
 else
 static Thread thread_findByAddr( ThreadID addr )
 {
@@ -2520,7 +2520,7 @@ extern (C) void thread_setThis(Thread t) nothrow @nogc
  * of only daemon threads.
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread : thread_joinAll;
+    public import external.core.thread : thread_joinAll;
 else
 extern (C) void thread_joinAll()
 {
@@ -2568,7 +2568,7 @@ shared static ~this()
 }
 
 version (DruntimeAbstractRt)
-    public import external.core.pthread : thread_intermediateShutdown;
+    public import external.core.thread : thread_intermediateShutdown;
 else
 private void thread_intermediateShutdown() nothrow @nogc
 {
@@ -2990,7 +2990,7 @@ private bool suspend( Thread t ) nothrow
  *  ThreadError if the suspend operation fails for a running thread.
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread: thread_suspendAll;
+    public import external.core.thread: thread_suspendAll;
 else
 extern (C) void thread_suspendAll() nothrow
 {
@@ -3149,7 +3149,7 @@ private void resume( Thread t ) nothrow
  *  ThreadError if the resume operation fails for a running thread.
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread: thread_resumeAll;
+    public import external.core.thread: thread_resumeAll;
 else
 extern (C) void thread_resumeAll() nothrow
 in
@@ -3203,7 +3203,7 @@ alias ScanAllThreadsTypeFn = void delegate(ScanType, void*, void*) nothrow; /// 
  *  This routine must be preceded by a call to thread_suspendAll.
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread: thread_scanAllType;
+    public import external.core.thread: thread_scanAllType;
 else
 extern (C) void thread_scanAllType( scope ScanAllThreadsTypeFn scan ) nothrow
 in
@@ -3524,7 +3524,7 @@ alias IsMarkedDg = int delegate( void* addr ) nothrow; /// The isMarked callback
  *  This routine must be called just prior to resuming all threads.
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread: thread_processGCMarks;
+    public import external.core.thread: thread_processGCMarks;
 else
 extern(C) void thread_processGCMarks( scope IsMarkedDg isMarked ) nothrow
 {
@@ -3630,7 +3630,7 @@ version (LDC_Windows)
 }
 version (DruntimeAbstractRt)
 {
-    public import external.core.pthread: getStackBottom;
+    public import external.core.thread: getStackBottom;
 }
 else
 package(core.thread) void* getStackBottom() nothrow @nogc
@@ -3732,7 +3732,7 @@ do
  *  The address of the stack bottom.
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread: thread_stackBottom;
+    public import external.core.thread: thread_stackBottom;
 else
 extern (C) void* thread_stackBottom() nothrow @nogc
 in
@@ -3956,7 +3956,7 @@ version (Windows)
 else version (Posix)
     alias ThreadID = pthread_t;
 else version (DruntimeAbstractRt)
-    public import external.core.pthread : ThreadID;
+    public import external.core.thread : ThreadID;
 
 ///////////////////////////////////////////////////////////////////////////////
 // lowlovel threading support
@@ -4162,7 +4162,7 @@ private
  *  is returned.
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread : createLowLevelThread;
+    public import external.core.thread : createLowLevelThread;
 else
 ThreadID createLowLevelThread(void delegate() nothrow dg, uint stacksize = 0,
                               void delegate() nothrow cbDllUnload = null) nothrow @nogc
@@ -4289,7 +4289,7 @@ void joinLowLevelThread(ThreadID tid) nothrow @nogc
  * Returns: `true` if the thread was created by `createLowLevelThread` and is still running.
  */
 version (DruntimeAbstractRt)
-    public import external.core.pthread : findLowLevelThread;
+    public import external.core.thread : findLowLevelThread;
 else
 bool findLowLevelThread(ThreadID tid) nothrow @nogc
 {
