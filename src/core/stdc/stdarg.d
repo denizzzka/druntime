@@ -13,7 +13,7 @@
 module core.stdc.stdarg;
 
 @system:
-@nogc:
+//@nogc:    // Not yet, need to make TypeInfo's member functions @nogc first
 nothrow:
 
 version (X86_64)

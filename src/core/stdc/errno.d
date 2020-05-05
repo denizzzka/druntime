@@ -155,7 +155,7 @@ else version (Haiku)
 }
 else version (CRuntime_Abstract)
 {
-    public import libc.errno;
+    public import external.libc.errno;
 }
 else
 {
@@ -2087,7 +2087,7 @@ else version (Haiku)
 }
 else version (CRuntime_Abstract)
 {
-    public import libc.errno;
+    public import external.libc.errno;
 }
 else
 {
