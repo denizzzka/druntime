@@ -176,7 +176,7 @@ else version (Posix)
 }
 else version (CRuntime_Abstract)
 {
-    public import libc.stdint;
+    public import external.libc.stdint;
 }
 else
 {

@@ -79,7 +79,7 @@ else version (Windows)
 }
 else version(CRuntime_Abstract)
 {
-    public import libc.time : time_t, clock_t, tm;
+    public import external.libc.time : time_t, clock_t, tm;
 }
 
 ///
@@ -148,7 +148,7 @@ else version (CRuntime_UClibc)
 }
 else version (CRuntime_Abstract)
 {
-    public import libc.time;
+    public import external.libc.time;
 }
 else
 {
@@ -259,7 +259,7 @@ else version (CRuntime_UClibc)
 }
 else version (CRuntime_Abstract)
 {
-    public import libc.time;
+    public import external.libc.time;
 }
 else
 {

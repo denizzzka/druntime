@@ -829,7 +829,7 @@ else version (X86_64)
 }
 version (CRuntime_Abstract)
 {
-    public import libc.stdarg;
+    public import external.libc.stdarg;
 }
 else
 {

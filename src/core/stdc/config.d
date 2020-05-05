@@ -146,7 +146,7 @@ else version (Posix)
 }
 else version (CRuntime_Abstract)
 {
-    public import libc.config;
+    public import external.libc.config;
 }
 
 version (CRuntime_Microsoft)
