@@ -48,7 +48,7 @@ src = [
     'src/rt/dwarfeh.d',
     'src/rt/ehalloc.d',
     'src/rt/invariant.d',
-    'src/rt/lifetime.d',   
+    'src/rt/lifetime.d',
     'src/rt/memory.d',
     'src/rt/minfo.d',
     'src/rt/monitor_.d',
