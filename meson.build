@@ -5,7 +5,7 @@ phobos_dep = declare_dependency(
 )
 
 src = [
-    #'src/core/internal/entrypoint.d',
+    'src/core/internal/entrypoint.d',
     'src/core/bitop.d',
     'src/core/cpuid.d',
     'src/core/gc/config.d',
