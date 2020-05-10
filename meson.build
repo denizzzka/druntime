@@ -110,7 +110,6 @@ ldc_specific = [
 
 arm_unwind = declare_dependency(
     sources: ['src/ldc/arm_unwind.c'],
-    language: 'c',
 )
 
 druntime_dep = declare_dependency(
