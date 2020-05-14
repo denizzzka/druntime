@@ -247,9 +247,9 @@ private extern (C) void initialize() @system
     }
     else version (DruntimeAbstractRt)
     {
-        import external.core.memory : initialize;
+        import external.core.memory : getPageSize;
 
-        (cast() pageSize) = initialize();
+        (cast() pageSize) = getPageSize();
     }
     else
         static assert(false, __FUNCTION__ ~ " is not implemented on this platform");
