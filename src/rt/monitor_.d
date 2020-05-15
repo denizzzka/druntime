@@ -220,7 +220,8 @@ else version (Posix)
 }
 else version (DruntimeAbstractRt)
 {
-    import external.rt.monitor_;
+    public import external.rt.monitor_ :
+        Mutex, initMutex, destroyMutex, lockMutex, unlockMutex;
 }
 else
 {
