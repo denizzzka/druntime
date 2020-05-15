@@ -25,6 +25,7 @@ src = [
     'src/core/runtime.d',
     'src/core/memory.d',
     'src/core/sync/event.d',
+    'src/core/sync/exception.d',
     'src/core/time.d',
     'src/core/thread/fiber.d',
     'src/core/thread/osthread.d',
