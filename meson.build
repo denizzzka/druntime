@@ -1,7 +1,7 @@
 project('druntime', ['d', 'c'])
 
 phobos_dep = declare_dependency(
-    include_directories: ['/usr/include/dmd/phobos/']
+    include_directories: get_option('phobos_include_path')
 )
 
 src = [
