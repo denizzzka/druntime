@@ -38,6 +38,7 @@ src = [
     'src/gc/os.d',
     'src/gc/proxy.d',
     'src/object.d',
+    'src/rt/adi.d',
     'src/rt/aaA.d',
     'src/rt/arraycat.d',
     'src/rt/cast_.d',
