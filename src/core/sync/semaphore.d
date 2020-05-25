@@ -49,6 +49,10 @@ else version (Posix)
     private import core.sys.posix.pthread;
     private import core.sys.posix.semaphore;
 }
+else version (DruntimeAbstractRt)
+{
+    public import external.core.semaphore : Semaphore;
+}
 else
 {
     static assert(false, "Platform not supported");
@@ -70,6 +74,8 @@ else
  * with "notify" to indicate that control is not transferred to the waiter when
  * a notification is sent.
  */
+version (DruntimeAbstractRt) {}
+else
 class Semaphore
 {
     ////////////////////////////////////////////////////////////////////////////
