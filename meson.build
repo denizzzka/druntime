@@ -26,6 +26,7 @@ src = [
     'src/core/memory.d',
     'src/core/sync/event.d',
     'src/core/sync/exception.d',
+    'src/core/sync/semaphore.d',
     'src/core/time.d',
     'src/core/thread/fiber.d',
     'src/core/thread/osthread.d',
