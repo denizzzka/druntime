@@ -2550,6 +2550,14 @@ extern(C) void _d_initMonoTime()
             }
         }
     }
+    else version (DruntimeAbstractRt)
+    {
+        import external.core.time : initTicksPerSecond;
+
+        initTicksPerSecond(tps);
+    }
+    else
+        static assert(0, "Unsupported platform");
 }
 
 
