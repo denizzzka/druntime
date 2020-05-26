@@ -94,8 +94,8 @@ static ~this()
 {
     if (newCounts.length)
     {
-        synchronized
-        {
+        //~ synchronized
+        //~ {
             foreach (name, entry; newCounts)
             {
                 if (!(name in globalNewCounts))
@@ -104,7 +104,7 @@ static ~this()
                 globalNewCounts[name].count += entry.count;
                 globalNewCounts[name].size += entry.size;
             }
-        }
+        //~ }
         newCounts.reset();
     }
     free(buffer.ptr);
