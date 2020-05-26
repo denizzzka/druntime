@@ -36,5 +36,5 @@ else version (Posix)
 }
 else version (CRuntime_Abstract)
 {
-    public import external.libc.stddef;
+    public import external.libc.stddef : wchar_t;
 }
