@@ -154,6 +154,10 @@ private
             import core.sys.posix.ucontext;
         }
     }
+    else version (DruntimeAbstractRt)
+    {
+        public import external.core.fiber : ucontext_t, swapcontext;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
