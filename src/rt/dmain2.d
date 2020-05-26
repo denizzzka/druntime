@@ -152,10 +152,11 @@ version (Windows)
 
 __gshared string[] _d_args = null;
 
-extern (C) string[] rt_args()
-{
-    return _d_args;
-}
+//FIXME:
+//~ extern (C) string[] rt_args()
+//~ {
+    //~ return _d_args;
+//~ }
 
 // This variable is only ever set by a debugger on initialization so it should
 // be fine to leave it as __gshared.

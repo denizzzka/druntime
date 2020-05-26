@@ -94,8 +94,8 @@ static ~this()
 {
     if (newCounts.length)
     {
-        synchronized
-        {
+        //~ synchronized
+        //~ {
             foreach (name, entry; newCounts)
             {
                 if (!(name in globalNewCounts))
@@ -104,7 +104,7 @@ static ~this()
                 globalNewCounts[name].count += entry.count;
                 globalNewCounts[name].size += entry.size;
             }
-        }
+        //~ }
         newCounts.reset();
     }
     free(buffer.ptr);
@@ -159,12 +159,12 @@ shared static ~this()
             {
                 fprintf(fp, "%15llu\t%15llu\t%8.*s\n",
                     cast(ulong)c.entry.size, cast(ulong)c.entry.count,
-                    c.name.length, c.name.ptr);
+                    cast(int) c.name.length, c.name.ptr);
             }
             if (logfilename.length)
                 fclose(fp);
         }
         else
-            fprintf(stderr, "cannot write profilegc log file '%.*s'", logfilename.length, logfilename.ptr);
+            fprintf(stderr, "cannot write profilegc log file '%.*s'", cast(int) logfilename.length, logfilename.ptr);
     }
 }
