@@ -291,7 +291,14 @@ private
 ///////////////////////////////////////////////////////////////////////////////
 
 
-version (Windows)
+version (DruntimeAbstractRt)
+{
+    public import external.core.thread :
+        thread_entryPoint,
+        thread_suspendHandler,
+        thread_resumeHandler;
+}
+else version (Windows)
 {
     private
     {
@@ -627,10 +634,6 @@ else version (Posix)
             return priv.locklevel > 0 || priv.critical_count > 0;
         }
     }
-}
-else version (DruntimeAbstractRt)
-{
-    public import external.core.thread;
 }
 else
 {
@@ -2304,7 +2307,8 @@ extern (C) Thread thread_attachThis()
     return attachThread(new Thread());
 }
 
-version (DruntimeAbstractRt) {}
+version (DruntimeAbstractRt)
+    public import external.core.thread : attachThread;
 else
 private Thread attachThread(Thread thisThread) @nogc
 {
