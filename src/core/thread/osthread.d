@@ -2148,9 +2148,6 @@ version (Posix)
  * garbage collector on startup and before any other thread routines
  * are called.
  */
-version (DruntimeAbstractRt)
-    public import external.core.thread : thread_init;
-else
 extern (C) void thread_init() @nogc
 {
     // NOTE: If thread_init itself performs any allocations then the thread
@@ -2167,7 +2164,13 @@ extern (C) void thread_init() @nogc
     // thread_resumeHandler does nothing.
     version (Android) thread_setGCSignals(SIGUSR2, SIGUSR1);
 
-    version (Darwin)
+    version (DruntimeAbstractRt)
+    {
+        import external.core.thread : external_thread_module_init;
+
+        external_thread_module_init();
+    }
+    else version (Darwin)
     {
         // thread id different in forked child process
         static extern(C) void initChildAfterFork()
@@ -3969,7 +3972,10 @@ else version (DruntimeAbstractRt)
 
 ///////////////////////////////////////////////////////////////////////////////
 // lowlovel threading support
-version (DruntimeAbstractRt){}
+version (DruntimeAbstractRt)
+{
+    public import external.core.thread : initLowlevelThreads;
+}
 else
 private
 {
