@@ -248,7 +248,7 @@ private extern (C) void initialize() @system
     {
         import external.core.memory : getPageSize;
 
-        (cast() pageSize) = getPageSize();
+        (cast() pageSize) = getPageSize;
     }
     else
         static assert(false, __FUNCTION__ ~ " is not implemented on this platform");

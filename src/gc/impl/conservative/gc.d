@@ -173,7 +173,7 @@ class ConservativeGC : GC
         gcx.initialize();
 
         if (config.initReserve)
-            gcx.reserve(config.initReserve << 20);
+            gcx.reserve(config.initReserve << 10);
         if (config.disable)
             gcx.disabled++;
     }
@@ -1122,9 +1122,12 @@ class ConservativeGC : GC
 
 /* ============================ Gcx =============================== */
 
+import external.core.memory : getPageSize;
+
 enum
-{   PAGESIZE =    4096,
-    POOLSIZE =   (4096*256),
+{   PAGESIZE = getPageSize,
+    //~ POOLSIZE =   (4096*256), //FIXME
+    POOLSIZE =   4096,
 }
 
 
@@ -1685,6 +1688,8 @@ struct Gcx
         bucket[bin] = (cast(List*)p).next;
         auto pool = (cast(List*)p).pool;
         auto biti = (p - pool.baseAddr) >> pool.shiftBy;
+        debug(PRINTF) printf("biti = %d\n", biti);
+
         assert(pool.freebits.test(biti));
         pool.freebits.clear(biti);
         if (bits)
@@ -1805,7 +1810,7 @@ struct Gcx
         //debug(PRINTF) printf("************Gcx::newPool(npages = %d)****************\n", npages);
 
         // Minimum of POOLSIZE
-        size_t minPages = (config.minPoolSize << 20) / PAGESIZE;
+        size_t minPages = (config.minPoolSize << 10) / PAGESIZE; //FIXME: minPoolSize in KB
         if (npages < minPages)
             npages = minPages;
         else if (npages > minPages)
@@ -1822,7 +1827,7 @@ struct Gcx
             n = config.minPoolSize + config.incPoolSize * npools;
             if (n > config.maxPoolSize)
                 n = config.maxPoolSize;                 // cap pool size
-            n *= (1 << 20) / PAGESIZE;                     // convert MB to pages
+            n *= (1 << 10) / PAGESIZE;                     // convert MB to pages
             if (npages < n)
                 npages = n;
         }
@@ -1984,7 +1989,7 @@ struct Gcx
         alias toscan = scanStack!precise;
 
         debug(MARK_PRINTF)
-            printf("marking range: [%p..%p] (%#llx)\n", pbot, ptop, cast(long)(ptop - pbot));
+            printf("marking range: [%p..%p] (%#llx)\n", rng.pbot, rng.ptop, cast(long)(rng.ptop - rng.pbot));
 
         // limit the amount of ranges added to the toscan stack
         enum FANOUT_LIMIT = 32;
