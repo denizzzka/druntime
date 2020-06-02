@@ -173,7 +173,7 @@ class ConservativeGC : GC
         gcx.initialize();
 
         if (config.initReserve)
-            gcx.reserve(config.initReserve << 10);
+            gcx.reserve(config.initReserve);
         if (config.disable)
             gcx.disabled++;
     }
@@ -1122,12 +1122,20 @@ class ConservativeGC : GC
 
 /* ============================ Gcx =============================== */
 
-import external.core.memory : getPageSize;
+version(DruntimeAbstractRt)
+{
+    import external.core.memory : getPageSize;
 
+    enum
+    {
+        PAGESIZE = getPageSize,
+        POOLSIZE = 4096,
+    }
+}
+else
 enum
-{   PAGESIZE = getPageSize,
-    //~ POOLSIZE =   (4096*256), //FIXME
-    POOLSIZE =   4096,
+{   PAGESIZE =    4096,
+    POOLSIZE =   (4096*256), //FIXME: why it is defined here?
 }
 
 
@@ -1688,8 +1696,6 @@ struct Gcx
         bucket[bin] = (cast(List*)p).next;
         auto pool = (cast(List*)p).pool;
         auto biti = (p - pool.baseAddr) >> pool.shiftBy;
-        debug(PRINTF) printf("biti = %d\n", biti);
-
         assert(pool.freebits.test(biti));
         pool.freebits.clear(biti);
         if (bits)
@@ -1810,7 +1816,7 @@ struct Gcx
         //debug(PRINTF) printf("************Gcx::newPool(npages = %d)****************\n", npages);
 
         // Minimum of POOLSIZE
-        size_t minPages = (config.minPoolSize << 10) / PAGESIZE; //FIXME: minPoolSize in KB
+        size_t minPages = config.minPoolSize / PAGESIZE;
         if (npages < minPages)
             npages = minPages;
         else if (npages > minPages)
@@ -1827,7 +1833,7 @@ struct Gcx
             n = config.minPoolSize + config.incPoolSize * npools;
             if (n > config.maxPoolSize)
                 n = config.maxPoolSize;                 // cap pool size
-            n *= (1 << 10) / PAGESIZE;                     // convert MB to pages
+            n /= PAGESIZE;
             if (npages < n)
                 npages = n;
         }

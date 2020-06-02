@@ -18,11 +18,10 @@ struct Config
     ubyte profile;           // enable profiling with summary when terminating program
     string gc = "conservative"; // select gc implementation conservative|precise|manual
 
-    // FIXME: ATTENTION! these values units temporary treated as KB
-    size_t initReserve;      // initial reserve (KB)
-    size_t minPoolSize = 4;  // initial and minimum pool size (KB)
-    size_t maxPoolSize = 24; // maximum pool size (KB)
-    size_t incPoolSize = 3;  // pool size increment (KB)
+    size_t initReserve;      // initial reserve (in bytes)
+    size_t minPoolSize = 1024 * 1024 * 1;  // initial and minimum pool size (in bytes)
+    size_t maxPoolSize = 1024 * 1024 * 64; // maximum pool size (in bytes)
+    size_t incPoolSize = 1024 * 1024 * 3;  // pool size increment (in bytes)
     uint parallel = 99;      // number of additional threads for marking (limited by cpuid.threadsPerCPU-1)
     float heapSizeFactor = 2.0; // heap size to used memory ratio
     string cleanup = "collect"; // select gc cleanup method none|collect|finalize
@@ -49,10 +48,10 @@ struct Config
         }
         printf(" - select gc implementation (default = conservative)
 
-    initReserve:N  - initial memory to reserve in MB (%lld)
-    minPoolSize:N  - initial and minimum pool size in MB (%lld)
-    maxPoolSize:N  - maximum pool size in MB (%lld)
-    incPoolSize:N  - pool size increment MB (%lld)
+    initReserve:N  - initial memory to reserve in bytes (%lld)
+    minPoolSize:N  - initial and minimum pool size in bytes (%lld)
+    maxPoolSize:N  - maximum pool size in bytes (%lld)
+    incPoolSize:N  - pool size increment bytes (%lld)
     parallel:N     - number of additional threads for marking (%lld)
     heapSizeFactor:N - targeted heap size to used memory ratio (%g)
     cleanup:none|collect|finalize - how to treat live objects when terminating (collect)

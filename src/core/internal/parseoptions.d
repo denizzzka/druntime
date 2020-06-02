@@ -267,8 +267,8 @@ unittest
         ubyte profile;           // enable profiling with summary when terminating program
         string gc = "conservative"; // select gc implementation conservative|manual
 
-        size_t initReserve;      // initial reserve (MB)
-        size_t minPoolSize = 1;  // initial and minimum pool size (MB)
+        size_t initReserve;      // initial reserve (in bytes)
+        size_t minPoolSize = 1024 * 1024 * 1;  // initial and minimum pool size (in bytes)
         float heapSizeFactor = 2.0; // heap size to used memory ratio
 
         @nogc nothrow:
