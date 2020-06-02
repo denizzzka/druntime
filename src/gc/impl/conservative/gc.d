@@ -1075,13 +1075,6 @@ class ConservativeGC : GC
         return ret;
     }
 
-
-    ulong allocatedInCurrentThread() nothrow
-    {
-        return bytesAllocated;
-    }
-
-
     //
     //
     //
@@ -1129,8 +1122,20 @@ class ConservativeGC : GC
 
 /* ============================ Gcx =============================== */
 
+version(DruntimeAbstractRt)
+{
+    import external.core.memory : getPageSize;
+
+    enum
+    {
+        PAGESIZE = getPageSize,
+        POOLSIZE = 4096,
+    }
+}
+else
 enum
 {   PAGESIZE =    4096,
+    POOLSIZE =   (4096*256), //FIXME: why it is defined here?
 }
 
 
@@ -1828,7 +1833,7 @@ struct Gcx
             n = config.minPoolSize + config.incPoolSize * npools;
             if (n > config.maxPoolSize)
                 n = config.maxPoolSize;                 // cap pool size
-            n /= PAGESIZE; // convert bytes to pages
+            n /= PAGESIZE;
             if (npages < n)
                 npages = n;
         }
@@ -1990,7 +1995,7 @@ struct Gcx
         alias toscan = scanStack!precise;
 
         debug(MARK_PRINTF)
-            printf("marking range: [%p..%p] (%#llx)\n", pbot, ptop, cast(long)(ptop - pbot));
+            printf("marking range: [%p..%p] (%#llx)\n", rng.pbot, rng.ptop, cast(long)(rng.ptop - rng.pbot));
 
         // limit the amount of ranges added to the toscan stack
         enum FANOUT_LIMIT = 32;
@@ -3063,8 +3068,6 @@ struct Pool
 
     void initialize(size_t npages, bool isLargeObject) nothrow
     {
-        assert(npages >= 256);
-
         this.isLargeObject = isLargeObject;
         size_t poolsize;
 
@@ -3072,6 +3075,7 @@ struct Pool
 
         //debug(PRINTF) printf("Pool::Pool(%u)\n", npages);
         poolsize = npages * PAGESIZE;
+        assert(poolsize >= POOLSIZE);
         baseAddr = cast(byte *)os_mem_map(poolsize);
 
         // Some of the code depends on page alignment of memory pools
@@ -3456,6 +3460,7 @@ struct Pool
         }
     }
 
+    pragma(inline,true)
     void setPointerBitmapSmall(void* p, size_t s, size_t allocSize, uint attr, const TypeInfo ti) nothrow
     {
         if (!(attr & BlkAttr.NO_SCAN))
