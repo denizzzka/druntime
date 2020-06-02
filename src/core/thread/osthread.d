@@ -1560,24 +1560,9 @@ extern (C) @nogc nothrow
     version (CRuntime_Musl)   version = PThread_Getattr_NP;
     version (CRuntime_UClibc) version = PThread_Getattr_NP;
 
-<<<<<<< HEAD
     version (FreeBSD)         version = PThread_Attr_Get_NP;
     version (NetBSD)          version = PThread_Attr_Get_NP;
     version (DragonFlyBSD)    version = PThread_Attr_Get_NP;
-=======
-/**
- * Initializes the thread module.  This function must be called by the
- * garbage collector on startup and before any other thread routines
- * are called.
- */
-extern (C) void thread_init() @nogc
-{
-    // NOTE: If thread_init itself performs any allocations then the thread
-    //       routines reserved for garbage collector use may be called while
-    //       thread_init is being processed.  However, since no memory should
-    //       exist to be scanned at this point, it is sufficient for these
-    //       functions to detect the condition and return immediately.
->>>>>>> added external_thread_module_init, initLowlevelThreads
 
     version (PThread_Getattr_NP)  int pthread_getattr_np(pthread_t thread, pthread_attr_t* attr);
     version (PThread_Attr_Get_NP) int pthread_attr_get_np(pthread_t thread, pthread_attr_t* attr);
@@ -1593,17 +1578,7 @@ version (LDC)
     version (PPC_Any)  version = LDC_stackTopAsm;
     version (MIPS_Any) version = LDC_stackTopAsm;
 
-<<<<<<< HEAD
     version (LDC_stackTopAsm)
-=======
-    version (DruntimeAbstractRt)
-    {
-        import external.core.thread : external_thread_module_init;
-
-        external_thread_module_init();
-    }
-    else version (Darwin)
->>>>>>> added external_thread_module_init, initLowlevelThreads
     {
         /* The inline assembler is written in a style that the code can be inlined.
          * If it isn't, the function is still naked, so the caller's stack pointer
@@ -2616,16 +2591,8 @@ version (DragonFlyBSD) unittest
 
 ///////////////////////////////////////////////////////////////////////////////
 // lowlovel threading support
-<<<<<<< HEAD
 ///////////////////////////////////////////////////////////////////////////////
 
-=======
-version (DruntimeAbstractRt)
-{
-    public import external.core.thread : initLowlevelThreads;
-}
-else
->>>>>>> added external_thread_module_init, initLowlevelThreads
 private
 {
     version (Windows):
