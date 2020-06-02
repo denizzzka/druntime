@@ -17,6 +17,7 @@ src = [
     'src/core/internal/array/equality.d',
     'src/core/internal/array/utils.d',
     'src/core/internal/entrypoint.d',
+    'src/core/internal/lifetime.d',
     'src/core/internal/parseoptions.d',
     'src/core/internal/spinlock.d',
     'src/core/internal/string.d',

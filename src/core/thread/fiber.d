@@ -13,6 +13,15 @@ module core.thread.fiber;
 
 import core.thread.osthread;
 
+version (OSX)
+    version = Darwin;
+else version (iOS)
+    version = Darwin;
+else version (TVOS)
+    version = Darwin;
+else version (WatchOS)
+    version = Darwin;
+
 version (LDC)
 {
     import ldc.attributes;
@@ -23,6 +32,8 @@ version (LDC)
         import ldc.sanitizers_optionally_linked;
     }
 }
+else
+    private enum assumeUsed = null;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Fiber Platform Detection
@@ -515,7 +526,7 @@ private
 
 version (LDC)
 {
-    version (OSX)
+    version (Darwin)
     {
         version (ARM) version = CheckFiberMigration;
         version (AArch64) version = CheckFiberMigration;
@@ -1895,6 +1906,8 @@ private:
     //
     final void switchIn() nothrow @nogc
     {
+        version (LDC) pragma(inline, false);
+
         Thread  tobj = Thread.getThis();
         void**  oldp = &tobj.m_curr.tstack;
         void*   newp = m_ctxt.tstack;
@@ -1979,6 +1992,8 @@ private:
     //
     final void switchOut() nothrow @nogc
     {
+        version (LDC) pragma(inline, false);
+
         Thread  tobj = m_curThread;
         void**  oldp = &m_ctxt.tstack;
         void*   newp = tobj.m_curr.within.tstack;

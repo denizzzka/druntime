@@ -11,6 +11,12 @@
 
 module core.stdcpp.allocator;
 
+// LDC: empty module for unsupported C++ runtimes
+version (CppRuntime_Microsoft)  version = Supported;
+else version (CppRuntime_Gcc)   version = Supported;
+else version (CppRuntime_Clang) version = Supported;
+version (Supported):
+
 import core.stdcpp.new_;
 import core.stdcpp.xutility : StdNamespace, __cpp_sized_deallocation, __cpp_aligned_new;
 
@@ -32,7 +38,18 @@ extern(D):
     this(U)(ref allocator!U) {}
 
     ///
+    alias size_type = size_t;
+    ///
+    alias difference_type = ptrdiff_t;
+    ///
+    alias pointer = T*;
+    ///
     alias value_type = T;
+
+    ///
+    enum propagate_on_container_move_assignment = true;
+    ///
+    enum is_always_equal = true;
 
     ///
     alias rebind(U) = allocator!U;
@@ -201,6 +218,61 @@ extern(D):
     }
 }
 
+///
+extern(C++, (StdNamespace))
+struct allocator_traits(Alloc)
+{
+    import core.internal.traits : isTrue;
+
+    ///
+    alias allocator_type = Alloc;
+    ///
+    alias value_type = allocator_type.value_type;
+    ///
+    alias size_type = allocator_type.size_type;
+    ///
+    alias difference_type = allocator_type.difference_type;
+    ///
+    alias pointer = allocator_type.pointer;
+
+    ///
+    enum propagate_on_container_copy_assignment = isTrue!(allocator_type, "propagate_on_container_copy_assignment");
+    ///
+    enum propagate_on_container_move_assignment = isTrue!(allocator_type, "propagate_on_container_move_assignment");
+    ///
+    enum propagate_on_container_swap = isTrue!(allocator_type, "propagate_on_container_swap");
+    ///
+    enum is_always_equal = isTrue!(allocator_type, "is_always_equal");
+
+    ///
+    template rebind_alloc(U)
+    {
+        static if (__traits(hasMember, allocator_type, "rebind"))
+            alias rebind_alloc = allocator_type.rebind!U;
+        else
+            alias rebind_alloc = allocator_type!U;
+    }
+    ///
+    alias rebind_traits(U) = allocator_traits!(rebind_alloc!U);
+
+    ///
+    static size_type max_size()(auto ref allocator_type a)
+    {
+        static if (__traits(hasMember, allocator_type, "max_size"))
+            return a.max_size();
+        else
+            return size_type.max / value_type.sizeof;
+    }
+
+    ///
+    static allocator_type select_on_container_copy_construction()(auto ref allocator_type a)
+    {
+        static if (__traits(hasMember, allocator_type, "select_on_container_copy_construction"))
+            return a.select_on_container_copy_construction();
+        else
+            return a;
+    }
+}
 
 private:
 
@@ -282,5 +354,16 @@ version (CppRuntime_Microsoft)
                 assert(false, "invalid argument");
             _Ptr = cast(void*)_Ptr_container;
         }
+    }
+}
+version (CppRuntime_Clang)
+{
+    // Helper for container swap
+    package(core.stdcpp) void __swap_allocator(Alloc)(ref Alloc __a1, ref Alloc __a2)
+    {
+        import core.internal.lifetime : swap;
+
+        static if (allocator_traits!Alloc.propagate_on_container_swap)
+            swap(__a1, __a2);
     }
 }

@@ -14,9 +14,10 @@ module rt.deh_win64_posix;
 
 version (LDC)
 {
+    // LDC only needs _d_eh_swapContext
     version (CRuntime_Microsoft)
     {
-        // MSVC EH
+        // _d_eh_swapContext implemented in ldc.eh_msvc
     }
     else
         version = Win64_Posix;
@@ -50,7 +51,7 @@ extern (C)
 {
     Throwable.TraceInfo _d_traceContext(void* ptr = null);
     int _d_isbaseof(ClassInfo oc, ClassInfo c);
-    void _d_createTrace(Object o, void* context);
+    void _d_createTrace(Throwable o, void* context);
 }
 
 alias int function() fp_t;   // function pointer in ambient memory model
@@ -512,4 +513,3 @@ extern (C) void _d_throwc(Throwable h)
     }
     terminate();
 }
-

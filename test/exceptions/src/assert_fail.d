@@ -29,6 +29,7 @@ void testIntegers()()
     test(uint.min, uint.max, "0 != 4294967295");
     test(long.min, long.max, "-9223372036854775808 != 9223372036854775807");
     test(ulong.min, ulong.max, "0 != 18446744073709551615");
+    test(shared(ulong).min, shared(ulong).max, "0 != 18446744073709551615");
 
     int testFun() { return 1; }
     test(testFun(), 2, "1 != 2");
@@ -62,6 +63,15 @@ void testStrings()
     // https://issues.dlang.org/show_bug.cgi?id=20322
     test("left"w, "right"w, `"left" != "right"`);
     test("left"d, "right"d, `"left" != "right"`);
+
+    test('A', 'B', "'A' != 'B'");
+    test(wchar('❤'), wchar('∑'), "'❤' != '∑'");
+    test(dchar('❤'), dchar('∑'), "'❤' != '∑'");
+
+    // Detect invalid code points
+    test(char(255), 'B', "cast(char) 255 != 'B'");
+    test(wchar(0xD888), wchar('∑'), "cast(wchar) 55432 != '∑'");
+    test(dchar(0xDDDD), dchar('∑'), "cast(dchar) 56797 != '∑'");
 }
 
 void testToString()()
@@ -79,6 +89,9 @@ void testToString()()
     }
     test(new Foo("a"), new Foo("b"), "Foo(a) != Foo(b)");
 
+    scope f = cast(shared) new Foo("a");
+    test!"!="(f, f, "Foo(a) == Foo(a)");
+
     // Verifiy that the const toString is selected if present
     static struct Overloaded
     {
@@ -94,6 +107,9 @@ void testToString()()
     }
 
     test!"!="(Overloaded(), Overloaded(), "Const == Const");
+
+    Foo fnull = null;
+    test!"!is"(fnull, fnull, "`null` is `null`");
 }
 
 
@@ -135,6 +151,9 @@ void testStruct()()
 
     NoCopy n;
     test(_d_assert_fail!"!="(n, n), "NoCopy() == NoCopy()");
+
+    shared NoCopy sn;
+    test(_d_assert_fail!"!="(sn, sn), "NoCopy() == NoCopy()");
 }
 
 void testAA()()

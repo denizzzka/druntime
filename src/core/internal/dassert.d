@@ -5,7 +5,7 @@ on assertion failures
 module core.internal.dassert;
 
 /// Allows customized assert error messages
-string _d_assert_fail(string comp, A, B)(auto ref const A a, auto ref const B b)
+string _d_assert_fail(string comp, A, B)(auto ref const scope A a, auto ref const scope B b)
 {
     /*
     The program will be terminated after the assertion error message has
@@ -70,26 +70,71 @@ private template getPrintfFormat(T)
 Minimalistic formatting for use in _d_assert_fail to keep the compilation
 overhead small and avoid the use of Phobos.
 */
-private string miniFormat(V)(const ref V v)
+private string miniFormat(V)(const scope ref V v)
 {
     import core.internal.traits: isAggregateType;
     import core.stdc.stdio : sprintf;
     import core.stdc.string : strlen;
-    static if (is(V : bool))
+
+    static if (is(V == shared T, T))
+    {
+        // Use atomics to avoid race conditions whenever possible
+        static if (__traits(compiles, atomicLoad(v)))
+        {
+            T tmp = cast(T) atomicLoad(v);
+            return miniFormat(tmp);
+        }
+        else
+        {   // Fall back to a simple cast - we're violating the type system anyways
+            return miniFormat(*cast(T*) &v);
+        }
+    }
+    else static if (is(V == bool))
     {
         return v ? "true" : "false";
     }
     else static if (__traits(isIntegral, V))
     {
-        enum printfFormat = getPrintfFormat!V;
-        char[20] val;
-        const len = sprintf(&val[0], printfFormat, v);
-        return val.idup[0 .. len];
+        static if (is(V == char))
+        {
+            // Avoid invalid code points
+            if (v < 0x7F)
+                return ['\'', v, '\''];
+
+            uint tmp = v;
+            return "cast(char) " ~ miniFormat(tmp);
+        }
+        else static if (is(V == wchar) || is(V == dchar))
+        {
+            import core.internal.utf: isValidDchar, toUTF8;
+
+            // Avoid invalid code points
+            if (isValidDchar(v))
+                return toUTF8(['\'', v, '\'']);
+
+            uint tmp = v;
+            return "cast(" ~ V.stringof ~ ") " ~ miniFormat(tmp);
+        }
+        else
+        {
+            enum printfFormat = getPrintfFormat!V;
+            char[20] val;
+            const len = sprintf(&val[0], printfFormat, v);
+            return val.idup[0 .. len];
+        }
     }
     else static if (__traits(isFloating, V))
     {
         char[60] val;
-        const len = sprintf(&val[0], "%g", v);
+        int len;
+        static if (is(V == cfloat) || is(V == cdouble))
+            len = sprintf(&val[0], "%g + %gi", v.re, v.im);
+        else static if (is(V == creal))
+            len = sprintf(&val[0], "%Lg + %Lgi", v.re, v.im);
+        else static if (is(V == real) || is(V == ireal))
+            len = sprintf(&val[0], "%Lg", v);
+        else
+            len = sprintf(&val[0], "%g", v);
         return val.idup[0 .. len];
     }
     // special-handling for void-arrays
@@ -97,14 +142,21 @@ private string miniFormat(V)(const ref V v)
     {
         return "`null`";
     }
-    else static if (__traits(compiles, { string s = v.toString(); }))
-    {
-        return v.toString();
-    }
-    // Non-const toString(), e.g. classes inheriting from Object
+    // toString() isn't always const, e.g. classes inheriting from Object
     else static if (__traits(compiles, { string s = V.init.toString(); }))
     {
-        return (cast() v).toString();
+        // Object references / struct pointers may be null
+        static if (is(V == class) || is(V == interface) || is(V == U*, U))
+        {
+            if (v is null)
+                return "`null`";
+        }
+
+        // Prefer const overload of toString
+        static if (__traits(compiles, { string s = v.toString(); }))
+            return v.toString();
+        else
+            return (cast() v).toString();
     }
     // Static arrays or slices (but not aggregates with `alias this`)
     else static if (is(V : U[], U) && !isAggregateType!V)
@@ -189,6 +241,11 @@ private string miniFormat(V)(const ref V v)
     }
 }
 
+// This should be a local import in miniFormat but fails with a cyclic dependency error
+// core.thread.osthread -> core.time -> object -> core.internal.array.capacity
+// -> core.atomic -> core.thread -> core.thread.osthread
+import core.atomic : atomicLoad;
+
 // Inverts a comparison token for use in _d_assert_fail
 private string invertCompToken(string comp)
 {
@@ -228,7 +285,7 @@ private auto assumeFakeAttributes(T)(T t) @trusted
     return cast(type) t;
 }
 
-private string miniFormatFakeAttributes(T)(const ref T t)
+private string miniFormatFakeAttributes(T)(const scope ref T t)
 {
     alias miniT = miniFormat!T;
     return assumeFakeAttributes(&miniT)(t);
