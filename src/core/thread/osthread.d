@@ -2020,6 +2020,9 @@ package(core.thread):
         //       to ensure that.
         slock.unlock_nothrow();
     }
+
+    // Used for needLock below.
+    private __gshared static bool multiThreadedFlag = false;
 }
 
 struct Context
@@ -2299,9 +2302,6 @@ extern (C) bool thread_isMainThread() nothrow @nogc
  *
  *       extern (C) void rt_moduleTlsCtor();
  */
-version (DruntimeAbstractRt)
-    public import external.core.thread : thread_attachThis;
-else
 extern (C) Thread thread_attachThis()
 {
     if (auto t = Thread.getThis())
@@ -2592,9 +2592,6 @@ private void thread_intermediateShutdown() nothrow @nogc
     }
 }
 
-
-// Used for needLock below.
-private __gshared bool multiThreadedFlag = false;
 
 version (LDC) {} else
 version (PPC64) version = ExternStackShell;
