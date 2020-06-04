@@ -122,7 +122,7 @@ private
     // interface to rt.tlsgc
     import core.internal.traits : externDFunc;
 
-    alias rt_tlsgc_init = externDFunc!("rt.tlsgc.init", void* function() nothrow @nogc);
+    public alias rt_tlsgc_init = externDFunc!("rt.tlsgc.init", void* function() nothrow @nogc);
     alias rt_tlsgc_destroy = externDFunc!("rt.tlsgc.destroy", void function(void*) nothrow @nogc);
 
     alias ScanDg = void delegate(void* pstart, void* pend) nothrow;
@@ -2151,6 +2151,9 @@ version (Posix)
  * garbage collector on startup and before any other thread routines
  * are called.
  */
+version (DruntimeAbstractRt)
+    public import external.core.thread : thread_init;
+else
 extern (C) void thread_init() @nogc
 {
     // NOTE: If thread_init itself performs any allocations then the thread
@@ -2167,13 +2170,7 @@ extern (C) void thread_init() @nogc
     // thread_resumeHandler does nothing.
     version (Android) thread_setGCSignals(SIGUSR2, SIGUSR1);
 
-    version (DruntimeAbstractRt)
-    {
-        import external.core.thread : external_thread_module_init;
-
-        external_thread_module_init();
-    }
-    else version (Darwin)
+    version (Darwin)
     {
         // thread id different in forked child process
         static extern(C) void initChildAfterFork()
@@ -2244,7 +2241,7 @@ extern (C) void thread_init() @nogc
     Thread.sm_main = attachThread((cast(Thread)_mainThreadStore.ptr).__ctor());
 }
 
-private __gshared align(Thread.alignof) void[__traits(classInstanceSize, Thread)] _mainThreadStore;
+__gshared align(Thread.alignof) void[__traits(classInstanceSize, Thread)] _mainThreadStore;
 
 extern (C) void _d_monitordelete_nogc(Object h) @nogc;
 
@@ -3969,10 +3966,7 @@ else version (DruntimeAbstractRt)
 
 ///////////////////////////////////////////////////////////////////////////////
 // lowlovel threading support
-version (DruntimeAbstractRt)
-{
-    public import external.core.thread : initLowlevelThreads;
-}
+version (DruntimeAbstractRt) { /* FIXIME */ }
 else
 private
 {
