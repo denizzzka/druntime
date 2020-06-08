@@ -1539,8 +1539,7 @@ private:
     //
     this(size_t sz = 0) @safe pure nothrow @nogc
     {
-        m_sz = sz;
-        m_curr = &m_main;
+        super(sz);
     }
 
 
@@ -1628,8 +1627,6 @@ private:
 
 package(core.thread):
 
-    StackContext        m_main;
-    StackContext*       m_curr;
     bool                m_lock;
     void*               m_tlsgcdata;
 

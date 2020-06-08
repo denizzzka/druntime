@@ -16,10 +16,22 @@ import core.thread.context;
 
 abstract class ThreadBase
 {
-protected:
+package(core.thread):
     //
     // Standard thread data
     //
     Callable m_call; /// The thread function.
     size_t m_sz; /// The stack size for this thread.
+    StackContext m_main;
+    StackContext* m_curr;
+
+    //
+    // Initializes a thread object which has no associated executable function.
+    // This is used for the main thread initialized in thread_init().
+    //
+    this(size_t sz = 0) @safe pure nothrow @nogc
+    {
+        m_sz = sz;
+        m_curr = &m_main;
+    }
 }
