@@ -968,7 +968,7 @@ class Thread : ThreadBase
      * Returns:
      *  true if the thread is running, false if not.
      */
-    final @property bool isRunning() nothrow @nogc
+    override final @property bool isRunning() nothrow @nogc
     {
         if ( m_addr == m_addr.init )
         {
@@ -1741,11 +1741,11 @@ package(core.thread):
         (cast(Mutex)_slock.ptr).__dtor();
         (cast(Mutex)_criticalRegionLock.ptr).__dtor();
     }
+}
 
-    package static size_t threadClassSize() nothrow @nogc
-    {
-        return Thread.sizeof;
-    }
+package extern (C) size_t threadClassSize() pure nothrow @nogc
+{
+    return Thread.sizeof;
 }
 
 ///
@@ -2271,9 +2271,10 @@ shared static ~this()
     }
 }
 
+private alias stackShellDg = scope void delegate(void* sp) nothrow;
 
 // Calls the given delegate, passing the current thread's stack pointer to it.
-/* private FIXME */ extern (D) void callWithStackShell(scope void delegate(void* sp) nothrow fn) nothrow
+extern (C) void callWithStackShell(stackShellDg fn) nothrow
 in
 {
     assert(fn);
@@ -2367,8 +2368,10 @@ do
  * Returns:
  *  Whether the thread is now suspended (true) or terminated (false).
  */
-private extern (C) bool suspend( Thread t ) nothrow
+private extern (C) bool thread_suspend( ThreadBase base ) nothrow
 {
+    Thread t = cast(Thread) base;
+
     Duration waittime = dur!"usecs"(10);
  Lagain:
     if (!t.isRunning)
@@ -2569,7 +2572,7 @@ private extern (C) bool suspend( Thread t ) nothrow
     return true;
 }
 
-extern void tls_gc_scan(scope ScanAllThreadsTypeFn scan, ThreadBase t) nothrow
+extern (C) void tls_gc_scan(scope ScanAllThreadsTypeFn scan, ThreadBase t) nothrow
 {
     version (Windows)
     {
@@ -2582,7 +2585,7 @@ extern void tls_gc_scan(scope ScanAllThreadsTypeFn scan, ThreadBase t) nothrow
         rt_tlsgc_scan(t.m_tlsgcdata, (p1, p2) => scan(ScanType.tls, p1, p2));
 }
 
-extern void threads_count_suspend(size_t cnt) nothrow
+extern(C) void threads_wait_for_suspend(size_t cnt) nothrow
 {
     version (Darwin)
     {}

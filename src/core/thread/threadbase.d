@@ -20,9 +20,8 @@ private import core.internal.traits : classInstanceAlignment;
 private enum mutexAlign = classInstanceAlignment!Mutex;
 private enum mutexClassInstanceSize = __traits(classInstanceSize, Mutex);
 
-abstract class ThreadBase
+package(core.thread) abstract class ThreadBase
 {
-package(core.thread):
     //
     // Standard thread data
     //
@@ -211,8 +210,6 @@ package(core.thread):
         ++sm_tlen;
     }
 
-    private static size_t threadClassSize() nothrow @nogc;
-
     //
     // Remove a thread from the global thread list.
     //
@@ -320,10 +317,11 @@ package(core.thread):
         return sm_this;
     }
 
-    @property bool isRunning() nothrow @nogc;
+    bool isRunning() nothrow @nogc;
 }
 
 extern (C) void* getStackBottom() nothrow @nogc;
+extern (C) size_t threadClassSize() pure nothrow @nogc;
 
 alias IsMarkedDg = int delegate( void* addr ) nothrow; /// The isMarked callback function.
 
@@ -400,7 +398,7 @@ do
     callWithStackShell(sp => scanAllTypeImpl(scan, sp));
 }
 
-extern (D) void callWithStackShell(scope void delegate(void* sp) nothrow fn) nothrow;
+extern (C) void callWithStackShell(scope void delegate(void* sp) nothrow fn) nothrow;
 
 // Used for suspendAll/resumeAll below.
 package __gshared uint suspendDepth = 0;
@@ -457,7 +455,7 @@ private void scanAllTypeImpl( scope ScanAllThreadsTypeFn scan, void* curStackTop
         tls_gc_scan(scan, t);
 }
 
-private void tls_gc_scan(scope ScanAllThreadsTypeFn scan, ThreadBase t) nothrow;
+extern (C) void tls_gc_scan(scope ScanAllThreadsTypeFn scan, ThreadBase t) nothrow;
 
 /**
  * Suspend all threads but the calling thread for "stop the world" garbage
@@ -486,7 +484,7 @@ extern (C) void thread_suspendAll() nothrow
     if ( !multiThreadedFlag && ThreadBase.sm_tbeg )
     {
         if ( ++suspendDepth == 1 )
-            suspend( ThreadBase.getThis() );
+            thread_suspend( ThreadBase.getThis() );
 
         return;
     }
@@ -503,15 +501,15 @@ extern (C) void thread_suspendAll() nothrow
         while (t)
         {
             auto tn = t.next;
-            if (suspend(t))
+            if (thread_suspend(t))
                 ++cnt;
             t = tn;
         }
 
-        threads_count_suspend(cnt);
+        threads_wait_for_suspend(cnt);
     }
 }
 
-extern bool suspend(ThreadBase t) nothrow;
-extern void threads_count_suspend(size_t cnt) nothrow;
+extern (C) bool thread_suspend(ThreadBase t) nothrow;
+extern (C) void threads_wait_for_suspend(size_t cnt) nothrow;
 package __gshared bool multiThreadedFlag = false; // Used for needLock
