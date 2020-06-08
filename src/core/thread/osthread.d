@@ -16,6 +16,7 @@ import core.thread.threadbase;
 import core.thread.context;
 import core.time;
 import core.exception : onOutOfMemoryError;
+import core.internal.traits : externDFunc;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Platform Detection and Memory Allocation
@@ -96,22 +97,22 @@ shared static this()
     }
 }
 
-//FIXME: remove
-private
-{
-    // interface to rt.tlsgc
-    import core.internal.traits : externDFunc;
+//~ //FIXME: remove
+//~ private
+//~ {
+    //~ // interface to rt.tlsgc
+    //~ import core.internal.traits : externDFunc;
 
-    alias rt_tlsgc_init = externDFunc!("rt.tlsgc.init", void* function() nothrow @nogc);
-    alias rt_tlsgc_destroy = externDFunc!("rt.tlsgc.destroy", void function(void*) nothrow @nogc);
+    //~ alias rt_tlsgc_init = externDFunc!("rt.tlsgc.init", void* function() nothrow @nogc);
+    //~ alias rt_tlsgc_destroy = externDFunc!("rt.tlsgc.destroy", void function(void*) nothrow @nogc);
 
-    alias ScanDg = void delegate(void* pstart, void* pend) nothrow;
-    alias rt_tlsgc_scan =
-        externDFunc!("rt.tlsgc.scan", void function(void*, scope ScanDg) nothrow);
+    //~ alias ScanDg = void delegate(void* pstart, void* pend) nothrow;
+    //~ alias rt_tlsgc_scan =
+        //~ externDFunc!("rt.tlsgc.scan", void function(void*, scope ScanDg) nothrow);
 
-    alias rt_tlsgc_processGCMarks =
-        externDFunc!("rt.tlsgc.processGCMarks", void function(void*, scope IsMarkedDg) nothrow);
-}
+    //~ alias rt_tlsgc_processGCMarks =
+        //~ externDFunc!("rt.tlsgc.processGCMarks", void function(void*, scope IsMarkedDg) nothrow);
+//~ }
 
 version (Solaris)
 {
@@ -758,7 +759,7 @@ class Thread : ThreadBase
         scope(exit) slock.unlock_nothrow();
         {
             ++nAboutToStart;
-            pAboutToStart = cast(Thread*)realloc(pAboutToStart, Thread.sizeof * nAboutToStart);
+            pAboutToStart = cast(ThreadBase*) /* FIXME: remove cast */ cast(Thread*)realloc(pAboutToStart, Thread.sizeof * nAboutToStart);
             pAboutToStart[nAboutToStart - 1] = this;
             version (Windows)
             {
@@ -1410,7 +1411,7 @@ class Thread : ThreadBase
         // NOTE: This function may not be called until thread_init has
         //       completed.  See thread_suspendAll for more information
         //       on why this might occur.
-        return sm_this;
+        return cast(Thread) ThreadBase.getThis();
     }
 
 
@@ -1545,7 +1546,7 @@ private:
     //
     // Local storage
     //
-    static Thread       sm_this;
+    //~ static Thread       sm_this;
 
 
     //
@@ -1601,8 +1602,6 @@ private:
     }
 
 package(core.thread):
-
-    bool                m_lock;
 
     ///////////////////////////////////////////////////////////////////////////
     // Thread Context and GC Scanning Support
@@ -1725,24 +1724,8 @@ package(core.thread):
     //       on construction/deletion.
 
 
-    //
-    // All use of the global thread lists/array should synchronize on this lock.
-    //
-    // Careful as the GC acquires this lock after the GC lock to suspend all
-    // threads any GC usage with slock held can result in a deadlock through
-    // lock order inversion.
-    @property static Mutex slock() nothrow @nogc
-    {
-        return cast(Mutex)_slock.ptr;
-    }
-
-    @property static Mutex criticalRegionLock() nothrow @nogc
-    {
-        return cast(Mutex)_criticalRegionLock.ptr;
-    }
-
-    __gshared align(mutexAlign) void[mutexClassInstanceSize] _slock;
-    __gshared align(mutexAlign) void[mutexClassInstanceSize] _criticalRegionLock;
+    //~ __gshared align(mutexAlign) void[mutexClassInstanceSize] _slock;
+    //~ __gshared align(mutexAlign) void[mutexClassInstanceSize] _criticalRegionLock;
 
     static void initLocks() @nogc
     {
@@ -1759,161 +1742,9 @@ package(core.thread):
         (cast(Mutex)_criticalRegionLock.ptr).__dtor();
     }
 
-    __gshared StackContext*  sm_cbeg;
-
-    // can't use core.internal.util.array in public code
-    __gshared Thread* pAboutToStart;
-    __gshared size_t nAboutToStart;
-
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Global Context List Operations
-    ///////////////////////////////////////////////////////////////////////////
-
-
-    //
-    // Add a context to the global context list.
-    //
-    static void add( StackContext* c ) nothrow @nogc
-    in
+    package static size_t threadClassSize() nothrow @nogc
     {
-        assert( c );
-        assert( !c.next && !c.prev );
-    }
-    do
-    {
-        slock.lock_nothrow();
-        scope(exit) slock.unlock_nothrow();
-        assert(!suspendDepth); // must be 0 b/c it's only set with slock held
-
-        if (sm_cbeg)
-        {
-            c.next = sm_cbeg;
-            sm_cbeg.prev = c;
-        }
-        sm_cbeg = c;
-    }
-
-    //
-    // Remove a context from the global context list.
-    //
-    // This assumes slock being acquired. This isn't done here to
-    // avoid double locking when called from remove(Thread)
-    static void remove( StackContext* c ) nothrow @nogc
-    in
-    {
-        assert( c );
-        assert( c.next || c.prev );
-    }
-    do
-    {
-        if ( c.prev )
-            c.prev.next = c.next;
-        if ( c.next )
-            c.next.prev = c.prev;
-        if ( sm_cbeg == c )
-            sm_cbeg = c.next;
-        // NOTE: Don't null out c.next or c.prev because opApply currently
-        //       follows c.next after removing a node.  This could be easily
-        //       addressed by simply returning the next node from this
-        //       function, however, a context should never be re-added to the
-        //       list anyway and having next and prev be non-null is a good way
-        //       to ensure that.
-    }
-
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Global Thread List Operations
-    ///////////////////////////////////////////////////////////////////////////
-
-
-    //
-    // Add a thread to the global thread list.
-    //
-    static void add( Thread t, bool rmAboutToStart = true ) nothrow @nogc
-    in
-    {
-        assert( t );
-        assert( !t.next && !t.prev );
-    }
-    do
-    {
-        slock.lock_nothrow();
-        scope(exit) slock.unlock_nothrow();
-        assert(t.isRunning); // check this with slock to ensure pthread_create already returned
-        assert(!suspendDepth); // must be 0 b/c it's only set with slock held
-
-        if (rmAboutToStart)
-        {
-            size_t idx = -1;
-            foreach (i, thr; pAboutToStart[0 .. nAboutToStart])
-            {
-                if (thr is t)
-                {
-                    idx = i;
-                    break;
-                }
-            }
-            assert(idx != -1);
-            import core.stdc.string : memmove;
-            memmove(pAboutToStart + idx, pAboutToStart + idx + 1, Thread.sizeof * (nAboutToStart - idx - 1));
-            pAboutToStart =
-                cast(Thread*)realloc(pAboutToStart, Thread.sizeof * --nAboutToStart);
-        }
-
-        if (sm_tbeg)
-        {
-            t.next = sm_tbeg;
-            sm_tbeg.prev = t;
-        }
-        sm_tbeg = t;
-        ++sm_tlen;
-    }
-
-
-    //
-    // Remove a thread from the global thread list.
-    //
-    static void remove( Thread t ) nothrow @nogc
-    in
-    {
-        assert( t );
-    }
-    do
-    {
-        // Thread was already removed earlier, might happen b/c of thread_detachInstance
-        if (!t.next && !t.prev && (sm_tbeg !is t))
-            return;
-
-        slock.lock_nothrow();
-        {
-            // NOTE: When a thread is removed from the global thread list its
-            //       main context is invalid and should be removed as well.
-            //       It is possible that t.m_curr could reference more
-            //       than just the main context if the thread exited abnormally
-            //       (if it was terminated), but we must assume that the user
-            //       retains a reference to them and that they may be re-used
-            //       elsewhere.  Therefore, it is the responsibility of any
-            //       object that creates contexts to clean them up properly
-            //       when it is done with them.
-            remove( &t.m_main );
-
-            if ( t.prev )
-                t.prev.next = t.next;
-            if ( t.next )
-                t.next.prev = t.prev;
-            if ( sm_tbeg is t )
-                sm_tbeg = t.next;
-            t.prev = t.next = null;
-            --sm_tlen;
-        }
-        // NOTE: Don't null out t.next or t.prev because opApply currently
-        //       follows t.next after removing a node.  This could be easily
-        //       addressed by simply returning the next node from this
-        //       function, however, a thread should never be re-added to the
-        //       list anyway and having next and prev be non-null is a good way
-        //       to ensure that.
-        slock.unlock_nothrow();
+        return Thread.sizeof;
     }
 }
 
@@ -2167,7 +1998,7 @@ extern (C) bool thread_isMainThread() nothrow @nogc
  *
  *       extern (C) void rt_moduleTlsCtor();
  */
-extern (C) Thread thread_attachThis()
+extern (C) ThreadBase thread_attachThis()
 {
     if (auto t = Thread.getThis())
         return t;
@@ -2345,7 +2176,7 @@ unittest
  * Returns:
  *  The thread object associated with the thread identifier, null if not found.
  */
-static Thread thread_findByAddr( ThreadID addr )
+static ThreadBase thread_findByAddr( ThreadID addr )
 {
     Thread.slock.lock_nothrow();
     scope(exit) Thread.slock.unlock_nothrow();
@@ -2353,11 +2184,11 @@ static Thread thread_findByAddr( ThreadID addr )
     // also return just spawned thread so that
     // DLL_THREAD_ATTACH knows it's a D thread
     foreach (t; Thread.pAboutToStart[0 .. Thread.nAboutToStart])
-        if (t.m_addr == addr)
+        if ((cast(Thread)t).m_addr == addr)
             return t;
 
     foreach (t; Thread)
-        if (t.m_addr == addr)
+        if ((cast(Thread)t).m_addr == addr)
             return t;
 
     return null;
@@ -2441,11 +2272,8 @@ shared static ~this()
 }
 
 
-// Used for needLock below.
-private __gshared bool multiThreadedFlag = false;
-
 // Calls the given delegate, passing the current thread's stack pointer to it.
-private void callWithStackShell(scope void delegate(void* sp) nothrow fn) nothrow
+/* private FIXME */ extern (D) void callWithStackShell(scope void delegate(void* sp) nothrow fn) nothrow
 in
 {
     assert(fn);
@@ -2523,9 +2351,6 @@ do
     fn(sp);
 }
 
-// Used for suspendAll/resumeAll below.
-private __gshared uint suspendDepth = 0;
-
 /**
  * Suspend the specified thread and load stack and register information for
  * use by thread_scanAll.  If the supplied thread is the calling thread,
@@ -2542,7 +2367,7 @@ private __gshared uint suspendDepth = 0;
  * Returns:
  *  Whether the thread is now suspended (true) or terminated (false).
  */
-private bool suspend( Thread t ) nothrow
+private extern (C) bool suspend( Thread t ) nothrow
 {
     Duration waittime = dur!"usecs"(10);
  Lagain:
@@ -2744,88 +2569,53 @@ private bool suspend( Thread t ) nothrow
     return true;
 }
 
-/**
- * Suspend all threads but the calling thread for "stop the world" garbage
- * collection runs.  This function may be called multiple times, and must
- * be followed by a matching number of calls to thread_resumeAll before
- * processing is resumed.
- *
- * Throws:
- *  ThreadError if the suspend operation fails for a running thread.
- */
-extern (C) void thread_suspendAll() nothrow
+extern void tls_gc_scan(scope ScanAllThreadsTypeFn scan, ThreadBase t) nothrow
 {
-    // NOTE: We've got an odd chicken & egg problem here, because while the GC
-    //       is required to call thread_init before calling any other thread
-    //       routines, thread_init may allocate memory which could in turn
-    //       trigger a collection.  Thus, thread_suspendAll, thread_scanAll,
-    //       and thread_resumeAll must be callable before thread_init
-    //       completes, with the assumption that no other GC memory has yet
-    //       been allocated by the system, and thus there is no risk of losing
-    //       data if the global thread list is empty.  The check of
-    //       Thread.sm_tbeg below is done to ensure thread_init has completed,
-    //       and therefore that calling Thread.getThis will not result in an
-    //       error.  For the short time when Thread.sm_tbeg is null, there is
-    //       no reason not to simply call the multithreaded code below, with
-    //       the expectation that the foreach loop will never be entered.
-    if ( !multiThreadedFlag && Thread.sm_tbeg )
+    version (Windows)
     {
-        if ( ++suspendDepth == 1 )
-            suspend( Thread.getThis() );
-
-        return;
+        // Ideally, we'd pass ScanType.regs or something like that, but this
+        // would make portability annoying because it only makes sense on Windows.
+        scan( ScanType.stack, t.m_reg.ptr, t.m_reg.ptr + t.m_reg.length );
     }
 
-    Thread.slock.lock_nothrow();
+    if (t.m_tlsgcdata !is null)
+        rt_tlsgc_scan(t.m_tlsgcdata, (p1, p2) => scan(ScanType.tls, p1, p2));
+}
+
+extern void threads_count_suspend(size_t cnt) nothrow
+{
+    version (Darwin)
+    {}
+    else version (Posix)
     {
-        if ( ++suspendDepth > 1 )
-            return;
-
-        Thread.criticalRegionLock.lock_nothrow();
-        scope (exit) Thread.criticalRegionLock.unlock_nothrow();
-        size_t cnt;
-        auto t = cast(Thread) Thread.sm_tbeg; //FIXME: remove cast
-        while (t)
+        // subtract own thread
+        assert(cnt >= 1);
+        --cnt;
+    Lagain:
+        // wait for semaphore notifications
+        for (; cnt; --cnt)
         {
-            auto tn = cast(Thread) t.next; //FIXME: remove cast
-            if (suspend(t))
-                ++cnt;
-            t = cast(Thread) tn; //FIXME: remove cast
-        }
-
-        version (Darwin)
-        {}
-        else version (Posix)
-        {
-            // subtract own thread
-            assert(cnt >= 1);
-            --cnt;
-        Lagain:
-            // wait for semaphore notifications
-            for (; cnt; --cnt)
+            while (sem_wait(&suspendCount) != 0)
             {
-                while (sem_wait(&suspendCount) != 0)
-                {
-                    if (errno != EINTR)
-                        onThreadError("Unable to wait for semaphore");
-                    errno = 0;
-                }
+                if (errno != EINTR)
+                    onThreadError("Unable to wait for semaphore");
+                errno = 0;
             }
-            version (FreeBSD)
-            {
-                // avoid deadlocks, see Issue 13416
-                t = Thread.sm_tbeg;
-                while (t)
-                {
-                    auto tn = t.next;
-                    if (t.m_suspendagain && suspend(t))
-                        ++cnt;
-                    t = tn;
-                }
-                if (cnt)
-                    goto Lagain;
-             }
         }
+        version (FreeBSD)
+        {
+            // avoid deadlocks, see Issue 13416
+            t = Thread.sm_tbeg;
+            while (t)
+            {
+                auto tn = t.next;
+                if (t.m_suspendagain && suspend(t))
+                    ++cnt;
+                t = tn;
+            }
+            if (cnt)
+                goto Lagain;
+         }
     }
 }
 
@@ -2938,100 +2728,6 @@ do
     }
 }
 
-/**
- * Indicates the kind of scan being performed by $(D thread_scanAllType).
- */
-enum ScanType
-{
-    stack, /// The stack and/or registers are being scanned.
-    tls, /// TLS data is being scanned.
-}
-
-alias ScanAllThreadsFn = void delegate(void*, void*) nothrow; /// The scanning function.
-alias ScanAllThreadsTypeFn = void delegate(ScanType, void*, void*) nothrow; /// ditto
-
-/**
- * The main entry point for garbage collection.  The supplied delegate
- * will be passed ranges representing both stack and register values.
- *
- * Params:
- *  scan        = The scanner function.  It should scan from p1 through p2 - 1.
- *
- * In:
- *  This routine must be preceded by a call to thread_suspendAll.
- */
-extern (C) void thread_scanAllType( scope ScanAllThreadsTypeFn scan ) nothrow
-in
-{
-    assert( suspendDepth > 0 );
-}
-do
-{
-    callWithStackShell(sp => scanAllTypeImpl(scan, sp));
-}
-
-
-private void scanAllTypeImpl( scope ScanAllThreadsTypeFn scan, void* curStackTop ) nothrow
-{
-    Thread  thisThread  = null;
-    void*   oldStackTop = null;
-
-    if ( Thread.sm_tbeg )
-    {
-        thisThread  = Thread.getThis();
-        if ( !thisThread.m_lock )
-        {
-            oldStackTop = thisThread.m_curr.tstack;
-            thisThread.m_curr.tstack = curStackTop;
-        }
-    }
-
-    scope( exit )
-    {
-        if ( Thread.sm_tbeg )
-        {
-            if ( !thisThread.m_lock )
-            {
-                thisThread.m_curr.tstack = oldStackTop;
-            }
-        }
-    }
-
-    // NOTE: Synchronizing on Thread.slock is not needed because this
-    //       function may only be called after all other threads have
-    //       been suspended from within the same lock.
-    if (Thread.nAboutToStart)
-        scan(ScanType.stack, Thread.pAboutToStart, Thread.pAboutToStart + Thread.nAboutToStart);
-
-    for ( StackContext* c = Thread.sm_cbeg; c; c = c.next )
-    {
-        version (StackGrowsDown)
-        {
-            // NOTE: We can't index past the bottom of the stack
-            //       so don't do the "+1" for StackGrowsDown.
-            if ( c.tstack && c.tstack < c.bstack )
-                scan( ScanType.stack, c.tstack, c.bstack );
-        }
-        else
-        {
-            if ( c.bstack && c.bstack < c.tstack )
-                scan( ScanType.stack, c.bstack, c.tstack + 1 );
-        }
-    }
-
-    for ( Thread t = cast(Thread) Thread.sm_tbeg; t; t = cast(Thread) t.next ) //FIXME casts
-    {
-        version (Windows)
-        {
-            // Ideally, we'd pass ScanType.regs or something like that, but this
-            // would make portability annoying because it only makes sense on Windows.
-            scan( ScanType.stack, t.m_reg.ptr, t.m_reg.ptr + t.m_reg.length );
-        }
-
-        if (t.m_tlsgcdata !is null)
-            rt_tlsgc_scan(t.m_tlsgcdata, (p1, p2) => scan(ScanType.tls, p1, p2));
-    }
-}
 
 /**
  * The main entry point for garbage collection.  The supplied delegate

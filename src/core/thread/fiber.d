@@ -12,6 +12,7 @@
 module core.thread.fiber;
 
 import core.thread.osthread;
+import core.thread.threadbase;
 import core.thread.context;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1016,7 +1017,7 @@ private:
             }
         }
 
-        Thread.add( m_ctxt );
+        ThreadBase.add( m_ctxt );
     }
 
 
@@ -1444,7 +1445,7 @@ private:
     //
     final void switchIn() nothrow @nogc
     {
-        Thread  tobj = Thread.getThis();
+        Thread  tobj = cast(Thread) /* FIXME: remove cast */ Thread.getThis();
         void**  oldp = &tobj.m_curr.tstack;
         void*   newp = m_ctxt.tstack;
 
@@ -1478,7 +1479,7 @@ private:
     //
     final void switchOut() nothrow @nogc
     {
-        Thread  tobj = Thread.getThis();
+        Thread  tobj = cast(Thread) /* FIXME: remove cast */ Thread.getThis();
         void**  oldp = &m_ctxt.tstack;
         void*   newp = tobj.m_curr.within.tstack;
 
@@ -1503,7 +1504,7 @@ private:
         // NOTE: If use of this fiber is multiplexed across threads, the thread
         //       executing here may be different from the one above, so get the
         //       current thread handle before unlocking, etc.
-        tobj = Thread.getThis();
+        tobj = cast(Thread) /* FIXME: remove cast */ Thread.getThis();
         atomicStore!(MemoryOrder.raw)(*cast(shared)&tobj.m_lock, false);
         tobj.m_curr.tstack = tobj.m_curr.bstack;
     }
