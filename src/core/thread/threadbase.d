@@ -25,13 +25,23 @@ package(core.thread):
     StackContext m_main;
     StackContext* m_curr;
 
-    //
-    // Initializes a thread object which has no associated executable function.
-    // This is used for the main thread initialized in thread_init().
-    //
     this(size_t sz = 0) @safe pure nothrow @nogc
     {
         m_sz = sz;
         m_curr = &m_main;
+    }
+
+    this( void function() fn, size_t sz = 0 ) @safe pure nothrow @nogc
+    in( fn )
+    {
+        this(sz);
+        m_call = fn;
+    }
+
+    this( void delegate() dg, size_t sz = 0 ) @safe pure nothrow @nogc
+    in( dg )
+    {
+        this(sz);
+        m_call = dg;
     }
 }
