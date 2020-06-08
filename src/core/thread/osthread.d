@@ -96,6 +96,7 @@ shared static this()
     }
 }
 
+//FIXME: remove
 private
 {
     // interface to rt.tlsgc
@@ -294,18 +295,14 @@ version (Windows)
             Thread  obj = cast(Thread) arg;
             assert( obj );
 
-            assert( obj.m_curr is &obj.m_main );
-            obj.m_main.bstack = getStackBottom();
-            obj.m_main.tstack = obj.m_main.bstack;
-            obj.m_tlsgcdata = rt_tlsgc_init();
+            obj.dataStorageInit();
 
             Thread.setThis(obj);
             Thread.add(obj);
             scope (exit)
             {
                 Thread.remove(obj);
-                rt_tlsgc_destroy( obj.m_tlsgcdata );
-                obj.m_tlsgcdata = null;
+                obj.dataStorageDestroy();
             }
             Thread.add(&obj.m_main);
 
@@ -405,10 +402,7 @@ else version (Posix)
                              void function(void*) @nogc nothrow)(loadedLibraries);
             }
 
-            assert( obj.m_curr is &obj.m_main );
-            obj.m_main.bstack = getStackBottom();
-            obj.m_main.tstack = obj.m_main.bstack;
-            obj.m_tlsgcdata = rt_tlsgc_init();
+            obj.dataStorageInit();
 
             atomicStore!(MemoryOrder.raw)(obj.m_isRunning, true);
             Thread.setThis(obj); // allocates lazy TLS (see Issue 11981)
@@ -417,8 +411,7 @@ else version (Posix)
             {
                 Thread.remove(obj);
                 atomicStore!(MemoryOrder.raw)(obj.m_isRunning, false);
-                rt_tlsgc_destroy( obj.m_tlsgcdata );
-                obj.m_tlsgcdata = null;
+                obj.dataStorageDestroy();
             }
             Thread.add(&obj.m_main);
 
@@ -673,11 +666,7 @@ class Thread : ThreadBase
      */
     ~this() nothrow @nogc
     {
-        if (m_tlsgcdata !is null)
-        {
-            rt_tlsgc_destroy( m_tlsgcdata );
-            m_tlsgcdata = null;
-        }
+        dataStorageDestroyIfAvail();
 
         bool no_context = m_addr == m_addr.init;
         bool not_registered = !next && !prev && (sm_tbeg !is this);
@@ -1505,7 +1494,7 @@ class Thread : ThreadBase
                 if (len == sm_tlen)
                 {
                     size_t pos;
-                    for (Thread t = sm_tbeg; t; t = t.next)
+                    for (Thread t = cast(Thread) sm_tbeg; t; t = cast(Thread) t.next) //FIXME: remove casts
                         buf[pos++] = t;
                     return buf;
                 }
@@ -1614,7 +1603,6 @@ private:
 package(core.thread):
 
     bool                m_lock;
-    void*               m_tlsgcdata;
 
     ///////////////////////////////////////////////////////////////////////////
     // Thread Context and GC Scanning Support
@@ -1773,18 +1761,9 @@ package(core.thread):
 
     __gshared StackContext*  sm_cbeg;
 
-    __gshared Thread    sm_tbeg;
-    __gshared size_t    sm_tlen;
-
     // can't use core.internal.util.array in public code
     __gshared Thread* pAboutToStart;
     __gshared size_t nAboutToStart;
-
-    //
-    // Used for ordering threads in the global thread list.
-    //
-    Thread              prev;
-    Thread              next;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -2217,7 +2196,7 @@ private Thread attachThread(Thread thisThread) @nogc
         atomicStore!(MemoryOrder.raw)(thisThread.m_isRunning, true);
     }
     thisThread.m_isDaemon = true;
-    thisThread.m_tlsgcdata = rt_tlsgc_init();
+    thisThread.tlsGCdataInit();
     Thread.setThis( thisThread );
 
     version (Darwin)
@@ -2419,18 +2398,18 @@ extern (C) void thread_joinAll()
     }
 
     // join all non-daemon threads, the main thread is also a daemon
-    auto t = Thread.sm_tbeg;
+    auto t = cast(Thread) Thread.sm_tbeg; //FIXME: remove cast
     while (t)
     {
         if (!t.isRunning)
         {
             auto tn = t.next;
             Thread.remove(t);
-            t = tn;
+            t = cast(Thread) tn; //FIXME: remove cast
         }
         else if (t.isDaemon)
         {
-            t = t.next;
+            t = cast(Thread) t.next; //FIXME: remove cast
         }
         else
         {
@@ -2451,13 +2430,13 @@ shared static ~this()
     // NOTE: The functionality related to garbage collection must be minimally
     //       operable after this dtor completes.  Therefore, only minimal
     //       cleanup may occur.
-    auto t = Thread.sm_tbeg;
+    auto t = cast(Thread) Thread.sm_tbeg; //FIXME: remove cast
     while (t)
     {
-        auto tn = t.next;
+        auto tn =  cast(Thread) t.next; //FIXME: remove cast
         if (!t.isRunning)
             Thread.remove(t);
-        t = tn;
+        t = cast(Thread) tn; //FIXME: remove cast
     }
 }
 
@@ -2805,13 +2784,13 @@ extern (C) void thread_suspendAll() nothrow
         Thread.criticalRegionLock.lock_nothrow();
         scope (exit) Thread.criticalRegionLock.unlock_nothrow();
         size_t cnt;
-        auto t = Thread.sm_tbeg;
+        auto t = cast(Thread) Thread.sm_tbeg; //FIXME: remove cast
         while (t)
         {
-            auto tn = t.next;
+            auto tn = cast(Thread) t.next; //FIXME: remove cast
             if (suspend(t))
                 ++cnt;
-            t = tn;
+            t = cast(Thread) tn; //FIXME: remove cast
         }
 
         version (Darwin)
@@ -2950,7 +2929,7 @@ do
         if ( --suspendDepth > 0 )
             return;
 
-        for ( Thread t = Thread.sm_tbeg; t; t = t.next )
+        for ( Thread t = cast(Thread) Thread.sm_tbeg; t; t = cast(Thread) t.next ) //FIXME: remove casts
         {
             // NOTE: We do not need to care about critical regions at all
             //       here. thread_suspendAll takes care of everything.
@@ -3040,7 +3019,7 @@ private void scanAllTypeImpl( scope ScanAllThreadsTypeFn scan, void* curStackTop
         }
     }
 
-    for ( Thread t = Thread.sm_tbeg; t; t = t.next )
+    for ( Thread t = cast(Thread) Thread.sm_tbeg; t; t = cast(Thread) t.next ) //FIXME casts
     {
         version (Windows)
         {
@@ -3284,31 +3263,8 @@ enum IsMarked : int
     unknown, /// Address is not managed by the GC.
 }
 
-alias IsMarkedDg = int delegate( void* addr ) nothrow; /// The isMarked callback function.
-
-/**
- * This routine allows the runtime to process any special per-thread handling
- * for the GC.  This is needed for taking into account any memory that is
- * referenced by non-scanned pointers but is about to be freed.  That currently
- * means the array append cache.
- *
- * Params:
- *  isMarked = The function used to check if $(D addr) is marked.
- *
- * In:
- *  This routine must be called just prior to resuming all threads.
- */
-extern(C) void thread_processGCMarks( scope IsMarkedDg isMarked ) nothrow
-{
-    for ( Thread t = Thread.sm_tbeg; t; t = t.next )
-    {
-        /* Can be null if collection was triggered between adding a
-         * thread and calling rt_tlsgc_init.
-         */
-        if (t.m_tlsgcdata !is null)
-            rt_tlsgc_processGCMarks(t.m_tlsgcdata, isMarked);
-    }
-}
+//FIXME: remove?
+//~ alias IsMarkedDg = int delegate( void* addr ) nothrow; /// The isMarked callback function.
 
 
 extern (C) @nogc nothrow
@@ -3342,7 +3298,8 @@ package(core.thread) void* getStackTop() nothrow @nogc
 }
 
 
-package(core.thread) void* getStackBottom() nothrow @nogc
+package(core.thread)
+extern (C) void* getStackBottom() nothrow @nogc
 {
     version (Windows)
     {
