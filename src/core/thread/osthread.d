@@ -1223,7 +1223,14 @@ version (Posix)
 }
 
 version (DruntimeAbstractRt)
-    public import external.core.thread : attachThread;
+{
+    import external.core.thread : external_attachThread;
+
+    private extern (D) ThreadBase attachThread(ThreadBase _thisThread) @nogc
+    {
+        return external_attachThread(_thisThread);
+    }
+}
 else
 private extern (D) ThreadBase attachThread(ThreadBase _thisThread) @nogc
 {
@@ -1623,7 +1630,12 @@ package extern(D) void* getStackTop() nothrow @nogc
 
 version (DruntimeAbstractRt)
 {
-    public import external.core.thread: getStackBottom;
+    static import external.core.thread;
+
+    package extern(D) void* getStackBottom() nothrow @nogc
+    {
+        return external.core.thread.getStackBottom();
+    }
 }
 else
 version (LDC_Windows)
