@@ -466,8 +466,8 @@ package:
 package(core.thread):
 
     StackContext        m_main;
-    StackContext*       m_curr;
-    bool                m_lock;
+    public /*FIXME: remove public*/ StackContext*       m_curr;
+    public /*FIXME: remove public*/ bool                m_lock;
     private void*       m_tlsgcdata;
 
     ///////////////////////////////////////////////////////////////////////////
@@ -475,7 +475,7 @@ package(core.thread):
     ///////////////////////////////////////////////////////////////////////////
 
 
-    final void pushContext(StackContext* c) nothrow @nogc
+    public /*FIXME: remove public*/ final void pushContext(StackContext* c) nothrow @nogc
     in
     {
         assert(!c.within);
@@ -488,7 +488,7 @@ package(core.thread):
     }
 
 
-    final void popContext() nothrow @nogc
+    public /*FIXME: remove public*/ final void popContext() nothrow @nogc
     in
     {
         assert(m_curr && m_curr.within);
