@@ -33,6 +33,7 @@ src = [
     'src/core/thread/threadbase.d',
     'src/core/thread/threadgroup.d',
     'src/core/thread/types.d',
+    'src/core/thread/context.d',
     'src/core/thread/package.d',
     'src/core/stdc/errno.d',
     'src/gc/bits.d',
