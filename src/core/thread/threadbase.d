@@ -446,7 +446,7 @@ package:
     //
     // Standard thread data
     //
-    ThreadID            m_addr;
+    public /*FIXME: remove public*/ ThreadID            m_addr;
     Callable            m_call;
     string              m_name;
     size_t              m_sz;
@@ -554,12 +554,12 @@ package(core.thread):
     // Careful as the GC acquires this lock after the GC lock to suspend all
     // threads any GC usage with slock held can result in a deadlock through
     // lock order inversion.
-    @property static Mutex slock() nothrow @nogc
+    public /*FIXME: remove public*/ @property static Mutex slock() nothrow @nogc
     {
         return cast(Mutex)_slock.ptr;
     }
 
-    @property static Mutex criticalRegionLock() nothrow @nogc
+    public /*FIXME: remove public*/ @property static Mutex criticalRegionLock() nothrow @nogc
     {
         return cast(Mutex)_criticalRegionLock.ptr;
     }
@@ -567,7 +567,7 @@ package(core.thread):
     __gshared align(mutexAlign) void[mutexClassInstanceSize] _slock;
     __gshared align(mutexAlign) void[mutexClassInstanceSize] _criticalRegionLock;
 
-    static void initLocks() @nogc
+    public /*FIXME: remove public*/ static void initLocks() @nogc
     {
         _slock[] = typeid(Mutex).initializer[];
         (cast(Mutex)_slock.ptr).__ctor();
@@ -962,10 +962,10 @@ shared static ~this()
 }
 
 // Used for needLock below.
-package __gshared bool multiThreadedFlag = false;
+public /*FIXME: package*/ __gshared bool multiThreadedFlag = false;
 
 // Used for suspendAll/resumeAll below.
-package __gshared uint suspendDepth = 0;
+public /*FIXME: package*/ __gshared uint suspendDepth = 0;
 
 private alias resume = externDFunc!("core.thread.osthread.resume", void function(ThreadBase) nothrow);
 
@@ -1210,7 +1210,7 @@ do
 * Throws:
 *  ThreadError.
 */
-package void onThreadError(string msg) nothrow @nogc
+public /*FIXME: package*/ void onThreadError(string msg) nothrow @nogc
 {
     __gshared ThreadError error = new ThreadError(null);
     error.msg = msg;
@@ -1328,7 +1328,7 @@ package
         return cast(Mutex)ll_lock.ptr;
     }
 
-    void initLowlevelThreads() @nogc
+    public /*FIXME: remove public*/ void initLowlevelThreads() @nogc
     {
         ll_lock[] = typeid(Mutex).initializer[];
         lowlevelLock.__ctor();

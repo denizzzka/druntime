@@ -1743,10 +1743,10 @@ private extern (D) bool suspend( Thread t ) nothrow
     }
     else if (t.m_isInCriticalRegion)
     {
-        Thread.criticalRegionLock.unlock_nothrow();
+        ThreadBase.criticalRegionLock.unlock_nothrow();
         Thread.sleep(waittime);
         if (waittime < dur!"msecs"(10)) waittime *= 2;
-        Thread.criticalRegionLock.lock_nothrow();
+        ThreadBase.criticalRegionLock.lock_nothrow();
         goto Lagain;
     }
 
