@@ -1,10 +1,5 @@
 project('druntime', ['d', 'c'])
 
-#FIXME: remove, unused:
-phobos_dep = declare_dependency(
-    include_directories: get_option('phobos_include_path')
-)
-
 src = [
     'src/core/bitop.d',
     'src/core/cpuid.d',
@@ -126,7 +121,6 @@ druntime_dep = declare_dependency(
     sources: [src, typeinfo_files, ldc_specific],
     include_directories: include_directories('src'),
     dependencies: [
-        #phobos_dep,
         arm_unwind,
     ],
 )
