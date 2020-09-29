@@ -21,7 +21,6 @@ import core.time;
 import core.exception : onOutOfMemoryError;
 import core.internal.traits : externDFunc;
 
-
 version (LDC)
 {
     import ldc.attributes;
@@ -38,6 +37,7 @@ version (LDC)
     version (PPC)   version = PPC_Any;
     version (PPC64) version = PPC_Any;
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Platform Detection and Memory Allocation
@@ -127,6 +127,11 @@ version (Solaris)
     import core.sys.solaris.sys.priocntl;
     import core.sys.solaris.sys.types;
     import core.sys.posix.sys.wait : idtype_t;
+}
+
+version (GNU)
+{
+    import gcc.builtins;
 }
 
 /**
@@ -1570,6 +1575,7 @@ extern (C) @nogc nothrow
     version (OpenBSD) int pthread_stackseg_np(pthread_t thread, stack_t* sinfo);
 }
 
+
 version (LDC)
 {
     version (X86)      version = LDC_stackTopAsm;
@@ -1584,7 +1590,7 @@ version (LDC)
          * If it isn't, the function is still naked, so the caller's stack pointer
          * is used nevertheless.
          */
-        package(core.thread) extern(D) void* getStackTop() nothrow @nogc @naked
+        package extern(D) void* getStackTop() nothrow @nogc @naked
         {
             version (X86)
                 return __asm!(void*)("movl %esp, $0", "=r");
@@ -1607,7 +1613,7 @@ version (LDC)
          * the slightly different meaning the function must neither be inlined
          * nor naked.
          */
-        package(core.thread) extern(D) void* getStackTop() nothrow @nogc
+        package extern(D) void* getStackTop() nothrow @nogc
         {
             import ldc.intrinsics;
             pragma(LDC_never_inline);
@@ -1640,7 +1646,7 @@ version (DruntimeAbstractRt)
 else
 version (LDC_Windows)
 {
-    package(core.thread) void* getStackBottom() nothrow @nogc @naked
+    package extern(D) void* getStackBottom() nothrow @nogc @naked
     {
         version (X86)
             return __asm!(void*)("mov %fs:(4), $0", "=r");
@@ -2588,6 +2594,7 @@ version (DragonFlyBSD) unittest
     }
     thr.join();
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // lowlovel threading support
