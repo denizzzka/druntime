@@ -24,8 +24,6 @@ version (Posix)
 
     alias ThreadID = pthread_t;
 }
-else version (DruntimeAbstractRt)
-    public import external.core.types : ThreadID;
 
 struct ll_ThreadData
 {
@@ -71,9 +69,6 @@ shared static this()
 
         PAGESIZE = cast(size_t)sysconf(_SC_PAGESIZE);
         PTHREAD_STACK_MIN = cast(size_t)sysconf(_SC_THREAD_STACK_MIN);
-    }
-    else version (DruntimeAbstractRt)
-    {
     }
     else
     {

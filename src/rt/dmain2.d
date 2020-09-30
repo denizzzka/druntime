@@ -575,7 +575,7 @@ private extern (C) int _d_run_main2(char[][] args, size_t totalArgsLength, MainF
                     if (utResult.passed == 0)
                         .fprintf(.stderr, "No unittests run\n");
                     else
-                        .fprintf(.stderr, "%d unittests passed\n",
+                        .fprintf(.stderr, "%d modules passed unittests\n",
                                  cast(int)utResult.passed);
                 }
                 if (utResult.runMain)
@@ -586,7 +586,7 @@ private extern (C) int _d_run_main2(char[][] args, size_t totalArgsLength, MainF
             else
             {
                 if (utResult.summarize)
-                    .fprintf(.stderr, "%d/%d unittests FAILED\n",
+                    .fprintf(.stderr, "%d/%d modules FAILED unittests\n",
                              cast(int)(utResult.executed - utResult.passed),
                              cast(int)utResult.executed);
                 result = EXIT_FAILURE;

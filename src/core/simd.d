@@ -38,47 +38,56 @@ template Vector(T)
 
 /* Handy aliases
  */
-static if (is(Vector!(void[16])))   alias Vector!(void[16])  void16;        ///
-static if (is(Vector!(double[2])))  alias Vector!(double[2]) double2;       ///
-static if (is(Vector!(float[4])))   alias Vector!(float[4])  float4;        ///
-static if (is(Vector!(byte[16])))   alias Vector!(byte[16])  byte16;        ///
-static if (is(Vector!(ubyte[16])))  alias Vector!(ubyte[16]) ubyte16;       ///
-static if (is(Vector!(short[8])))   alias Vector!(short[8])  short8;        ///
-static if (is(Vector!(ushort[8])))  alias Vector!(ushort[8]) ushort8;       ///
-static if (is(Vector!(int[4])))     alias Vector!(int[4])    int4;          ///
-static if (is(Vector!(uint[4])))    alias Vector!(uint[4])   uint4;         ///
-static if (is(Vector!(long[2])))    alias Vector!(long[2])   long2;         ///
-static if (is(Vector!(ulong[2])))   alias Vector!(ulong[2])  ulong2;        ///
+static if (is(Vector!(void[8])))    alias Vector!(void[8])    void8;        ///
+static if (is(Vector!(double[1])))  alias Vector!(double[1])  double1;      ///
+static if (is(Vector!(float[2])))   alias Vector!(float[2])   float2;       ///
+static if (is(Vector!(byte[8])))    alias Vector!(byte[8])    byte8;        ///
+static if (is(Vector!(ubyte[8])))   alias Vector!(ubyte[8])   ubyte8;       ///
+static if (is(Vector!(short[4])))   alias Vector!(short[4])   short4;       ///
+static if (is(Vector!(ushort[4])))  alias Vector!(ushort[4])  ushort4;      ///
+static if (is(Vector!(int[2])))     alias Vector!(int[2])     int2;         ///
+static if (is(Vector!(uint[2])))    alias Vector!(uint[2])    uint2;        ///
+static if (is(Vector!(long[1])))    alias Vector!(long[1])    long1;        ///
+static if (is(Vector!(ulong[1])))   alias Vector!(ulong[1])   ulong1;       ///
 
-version (all) // LDC: was D_AVX
-{
-    static if (is(Vector!(void[32])))   alias Vector!(void[32])   void32;        ///
-    static if (is(Vector!(double[4])))  alias Vector!(double[4])  double4;       ///
-    static if (is(Vector!(float[8])))   alias Vector!(float[8])   float8;        ///
-    static if (is(Vector!(byte[32])))   alias Vector!(byte[32])   byte32;        ///
-    static if (is(Vector!(ubyte[32])))  alias Vector!(ubyte[32])  ubyte32;       ///
-    static if (is(Vector!(short[16])))  alias Vector!(short[16])  short16;       ///
-    static if (is(Vector!(ushort[16]))) alias Vector!(ushort[16]) ushort16;      ///
-    static if (is(Vector!(int[8])))     alias Vector!(int[8])     int8;          ///
-    static if (is(Vector!(uint[8])))    alias Vector!(uint[8])    uint8;         ///
-    static if (is(Vector!(long[4])))    alias Vector!(long[4])    long4;         ///
-    static if (is(Vector!(ulong[4])))   alias Vector!(ulong[4])   ulong4;        ///
-}
+static if (is(Vector!(void[16])))   alias Vector!(void[16])   void16;       ///
+static if (is(Vector!(double[2])))  alias Vector!(double[2])  double2;      ///
+static if (is(Vector!(float[4])))   alias Vector!(float[4])   float4;       ///
+static if (is(Vector!(byte[16])))   alias Vector!(byte[16])   byte16;       ///
+static if (is(Vector!(ubyte[16])))  alias Vector!(ubyte[16])  ubyte16;      ///
+static if (is(Vector!(short[8])))   alias Vector!(short[8])   short8;       ///
+static if (is(Vector!(ushort[8])))  alias Vector!(ushort[8])  ushort8;      ///
+static if (is(Vector!(int[4])))     alias Vector!(int[4])     int4;         ///
+static if (is(Vector!(uint[4])))    alias Vector!(uint[4])    uint4;        ///
+static if (is(Vector!(long[2])))    alias Vector!(long[2])    long2;        ///
+static if (is(Vector!(ulong[2])))   alias Vector!(ulong[2])   ulong2;       ///
+
+static if (is(Vector!(void[32])))   alias Vector!(void[32])   void32;       ///
+static if (is(Vector!(double[4])))  alias Vector!(double[4])  double4;      ///
+static if (is(Vector!(float[8])))   alias Vector!(float[8])   float8;       ///
+static if (is(Vector!(byte[32])))   alias Vector!(byte[32])   byte32;       ///
+static if (is(Vector!(ubyte[32])))  alias Vector!(ubyte[32])  ubyte32;      ///
+static if (is(Vector!(short[16])))  alias Vector!(short[16])  short16;      ///
+static if (is(Vector!(ushort[16]))) alias Vector!(ushort[16]) ushort16;     ///
+static if (is(Vector!(int[8])))     alias Vector!(int[8])     int8;         ///
+static if (is(Vector!(uint[8])))    alias Vector!(uint[8])    uint8;        ///
+static if (is(Vector!(long[4])))    alias Vector!(long[4])    long4;        ///
+static if (is(Vector!(ulong[4])))   alias Vector!(ulong[4])   ulong4;       ///
+
+static if (is(Vector!(void[64])))   alias Vector!(void[64])   void64;       ///
+static if (is(Vector!(double[8])))  alias Vector!(double[8])  double8;      ///
+static if (is(Vector!(float[16])))  alias Vector!(float[16])  float16;      ///
+static if (is(Vector!(byte[64])))   alias Vector!(byte[64])   byte64;       ///
+static if (is(Vector!(ubyte[64])))  alias Vector!(ubyte[64])  ubyte64;      ///
+static if (is(Vector!(short[32])))  alias Vector!(short[32])  short32;      ///
+static if (is(Vector!(ushort[32]))) alias Vector!(ushort[32]) ushort32;     ///
+static if (is(Vector!(int[16])))    alias Vector!(int[16])    int16;        ///
+static if (is(Vector!(uint[16])))   alias Vector!(uint[16])   uint16;       ///
+static if (is(Vector!(long[8])))    alias Vector!(long[8])    long8;        ///
+static if (is(Vector!(ulong[8])))   alias Vector!(ulong[8])   ulong8;       ///
 
 version (LDC)
 {
-    static if (is(Vector!(void[64])))   alias Vector!(void[64])   void64;        ///
-    static if (is(Vector!(double[8])))  alias Vector!(double[8])  double8;       ///
-    static if (is(Vector!(float[16])))  alias Vector!(float[16])  float16;       ///
-    static if (is(Vector!(byte[64])))   alias Vector!(byte[64])   byte64;        ///
-    static if (is(Vector!(ubyte[64])))  alias Vector!(ubyte[64])  ubyte64;       ///
-    static if (is(Vector!(short[32])))  alias Vector!(short[32])  short32;       ///
-    static if (is(Vector!(ushort[32]))) alias Vector!(ushort[32]) ushort32;      ///
-    static if (is(Vector!(int[16])))    alias Vector!(int[16])    int16;         ///
-    static if (is(Vector!(uint[16])))   alias Vector!(uint[16])   uint16;        ///
-    static if (is(Vector!(long[8])))    alias Vector!(long[8])    long8;         ///
-    static if (is(Vector!(ulong[8])))   alias Vector!(ulong[8])   ulong8;        ///
-
     public import ldc.simd : loadUnaligned, storeUnaligned;
 
     /*********************
@@ -433,57 +442,27 @@ else version (D_SIMD)
     * Returns:
     *      result of opcode
     */
-    pure @safe V1 simd(XMM opcode, V1, V2)(V1 op1, V2 op2)
-        if (is(V1 == __vector) && is(V2 == __vector))
-    {
-        pragma(inline, true);
-        return cast(V1)__simd(opcode, op1, op2);
-    }
-
-    pure @safe void16 __simd(XMM opcode, void16 op1, void16 op2); // intrinsic
+    pure @safe void16 __simd(XMM opcode, void16 op1, void16 op2);
 
     ///
     unittest
     {
         float4 a;
-        a = simd!(XMM.PXOR)(a, a);
+        a = cast(float4)__simd(XMM.PXOR, a, a);
     }
 
     /**
     * Unary SIMD instructions.
     */
-    pure @safe V1 simd(XMM opcode, V1)(V1 op1)
-        if (is(V1 == __vector))
-    {
-        pragma(inline, true);
-        return cast(V1)__simd(opcode, op1);
-    }
-
-    ///
-    pure @safe V1 simd(XMM opcode, V1)(double d)
-        if (is(V1 == __vector))
-    {
-        pragma(inline, true);
-        return cast(V1)__simd(opcode, d);
-    }
-
-    ///
-    pure @safe V1 simd(XMM opcode, V1)(float f)
-        if (is(V1 == __vector))
-    {
-        pragma(inline, true);
-        return cast(V1)__simd(opcode, f);
-    }
-
-    pure @safe void16 __simd(XMM opcode, void16 op1); // intrinsic
-    pure @safe void16 __simd(XMM opcode, double d);   // intrinsic
-    pure @safe void16 __simd(XMM opcode, float f);    // intrinsic
+    pure @safe void16 __simd(XMM opcode, void16 op1);
+    pure @safe void16 __simd(XMM opcode, double d);   ///
+    pure @safe void16 __simd(XMM opcode, float f);    ///
 
     ///
     unittest
     {
         float4 a;
-        a = simd!(XMM.LODSS)(a);
+        a = cast(float4)__simd(XMM.LODSS, a);
     }
 
     /****
@@ -501,20 +480,13 @@ else version (D_SIMD)
     * Returns:
     *      result of opcode
     */
-    pure @safe V1 simd(XMM opcode, ubyte imm8, V1, V2)(V1 op1, V2 op2)
-        if (is(V1 == __vector) && is(V2 == __vector))
-    {
-        pragma(inline, true);
-        return cast(V1)__simd(opcode, op1, op2, imm8);
-    }
-
-    pure @safe void16 __simd(XMM opcode, void16 op1, void16 op2, ubyte imm8); // intrinsic
+    pure @safe void16 __simd(XMM opcode, void16 op1, void16 op2, ubyte imm8);
 
     ///
     unittest
     {
         float4 a;
-        a = simd!(XMM.CMPPD, 0x7A)(a, a);
+        a = cast(float4)__simd(XMM.CMPPD, a, a, 0x7A);
     }
 
     /***
@@ -528,20 +500,13 @@ else version (D_SIMD)
     * Returns:
     *      result of opcode
     */
-    pure @safe V1 simd(XMM opcode, ubyte imm8, V1)(V1 op1)
-        if (is(V1 == __vector))
-    {
-        pragma(inline, true);
-        return cast(V1)__simd_ib(opcode, op1, imm8);
-    }
-
-    pure @safe void16 __simd_ib(XMM opcode, void16 op1, ubyte imm8);  // intrinsic
+    pure @safe void16 __simd_ib(XMM opcode, void16 op1, ubyte imm8);
 
     ///
     unittest
     {
         float4 a;
-        a = simd!(XMM.PSRLQ, 0x7A)(a);
+        a = cast(float4) __simd_ib(XMM.PSRLQ, a, 0x7A);
     }
 
     /*****
@@ -551,32 +516,9 @@ else version (D_SIMD)
     *    op2
     * These cannot be marked as pure, as semantic() doesn't check them.
     */
-    @safe V1 simd_sto(XMM opcode, V1, V2)(V1 op1, V2 op2)
-        if (is(V1 == __vector) && is(V2 == __vector))
-    {
-        pragma(inline, true);
-        return cast(V1)__simd_sto(opcode, op1, op2);
-    }
-
-    ///
-    @safe V1 simd_stod(XMM opcode, V1, V2)(double op1, V1 op2)
-        if (is(V1 == __vector))
-    {
-        pragma(inline, true);
-        return cast(V1)__simd_sto(opcode, op1, op2);
-    }
-
-    ///
-    @safe V1 simd_stof(XMM opcode, V1)(float op1, V1 op2)
-        if (is(V1 == __vector))
-    {
-        pragma(inline, true);
-        return cast(V1)__simd_sto(opcode, op1, op2);
-    }
-
-    @safe void16 __simd_sto(XMM opcode, void16 op1, void16 op2);  // intrinsic
-    @safe void16 __simd_sto(XMM opcode, double op1, void16 op2);  // intrinsic
-    @safe void16 __simd_sto(XMM opcode, float op1, void16 op2);   // intrinsic
+    @safe void16 __simd_sto(XMM opcode, void16 op1, void16 op2);
+    @safe void16 __simd_sto(XMM opcode, double op1, void16 op2); ///
+    @safe void16 __simd_sto(XMM opcode, float op1, void16 op2);  ///
 
     ///
     unittest
@@ -585,9 +527,9 @@ else version (D_SIMD)
         float f = 1;
         double d = 1;
 
-        cast(void)simd_sto!(XMM.STOUPS)(a, a);
-        //simd_sto!(XMM.STOUPS)(f, a);
-        //simd_sto!(XMM.STOUPS)(d, a);
+        cast(void)__simd_sto(XMM.STOUPS, a, a);
+        cast(void)__simd_sto(XMM.STOUPS, f, a);
+        cast(void)__simd_sto(XMM.STOUPS, d, a);
     }
 
     /* The following use overloading to ensure correct typing.
@@ -618,10 +560,10 @@ else version (D_SIMD)
     *    $(TROW false, 1, prefetch2)
     *    $(TROW false, 2, prefetch1)
     *    $(TROW false, 3, prefetch0)
-    *    $(TROW false, 0, prefetchw)
-    *    $(TROW false, 1, prefetchw)
-    *    $(TROW false, 2, prefetchw)
-    *    $(TROW false, 3, prefetchw)
+    *    $(TROW true, 0, prefetchw)
+    *    $(TROW true, 1, prefetchw)
+    *    $(TROW true, 2, prefetchw)
+    *    $(TROW true, 3, prefetchw)
     *    )
     */
     void prefetch(bool writeFetch, ubyte locality)(const(void)* address)

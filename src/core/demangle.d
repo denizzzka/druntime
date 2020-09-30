@@ -279,7 +279,7 @@ pure @safe:
 
         UnsignedStringBuf buf = void;
 
-        auto s = unsignedToTempString(val, buf, 16);
+        auto s = unsignedToTempString!16(val, buf);
         int slen = cast(int)s.length;
         if (slen < width)
         {
@@ -923,7 +923,6 @@ pure @safe:
             return dst[beg .. len];
         case 'F': case 'U': case 'W': case 'V': case 'R': // TypeFunction
             return parseTypeFunction( name );
-        case 'I': // TypeIdent (I LName)
         case 'C': // TypeClass (C LName)
         case 'S': // TypeStruct (S LName)
         case 'E': // TypeEnum (E LName)
@@ -1190,6 +1189,10 @@ pure @safe:
                 popFront();
                 put( "scope " );
                 continue;
+            case 'm': // FuncAttrLive
+                popFront();
+                put( "@live " );
+                continue;
             default:
                 error();
             }
@@ -1237,14 +1240,21 @@ pure @safe:
             }
             switch ( front )
             {
-            case 'J': // out (J Type)
+            case 'I': // in  (I Type)
                 popFront();
-                put( "out " );
+                put("in ");
+                if (front == 'K')
+                    goto case;
                 parseType();
                 continue;
             case 'K': // ref (K Type)
                 popFront();
                 put( "ref " );
+                parseType();
+                continue;
+            case 'J': // out (J Type)
+                popFront();
+                put( "out " );
                 parseType();
                 continue;
             case 'L': // lazy (L Type)
@@ -2350,7 +2360,6 @@ char[] mangleFunc(T:FT*, FT)(const(char)[] fqn, char[] dst = null) @safe pure no
 
 private enum hasTypeBackRef = (int function(void**,void**)).mangleof[$-4 .. $] == "QdZi";
 
-///
 @safe pure nothrow unittest
 {
     assert(mangleFunc!(int function(int))("a.b") == "_D1a1bFiZi");
@@ -2434,6 +2443,8 @@ else
         ["printf", "printf"],
         ["_foo", "_foo"],
         ["_D88", "_D88"],
+        ["_D3fooQeFIAyaZv", "void foo.foo(in immutable(char)[])" ],
+        ["_D3barQeFIKAyaZv", "void bar.bar(in ref immutable(char)[])" ],
         ["_D4test3fooAa", "char[] test.foo"],
         ["_D8demangle8demangleFAaZAa", "char[] demangle.demangle(char[])"],
         ["_D6object6Object8opEqualsFC6ObjectZi", "int object.Object.opEquals(Object)"],
@@ -2485,7 +2496,7 @@ else
         ["_D3foo7__arrayZ", "foo.__array"],
         ["_D8link657428__T3fooVE8link65746Methodi0Z3fooFZi", "int link6574.foo!(0).foo()"],
         ["_D8link657429__T3fooHVE8link65746Methodi0Z3fooFZi", "int link6574.foo!(0).foo()"],
-        ["_D4test22__T4funcVAyaa3_610a62Z4funcFNaNbNiNfZAya", `pure nothrow @nogc @safe immutable(char)[] test.func!("a\x0ab").func()`],
+        ["_D4test22__T4funcVAyaa3_610a62Z4funcFNaNbNiNmNfZAya", `pure nothrow @nogc @live @safe immutable(char)[] test.func!("a\x0ab").func()`],
         ["_D3foo3barFzkZzi", "cent foo.bar(ucent)"],
         ["_D5bug145Class3fooMFNlZPv", "scope void* bug14.Class.foo()"],
         ["_D5bug145Class3barMFNjZPv", "return void* bug14.Class.bar()"],
@@ -2559,13 +2570,13 @@ else
     {
         auto r = demangle( name[0] );
         assert( r == name[1],
-                "demangled \"" ~ name[0] ~ "\" as \"" ~ r ~ "\" but expected \"" ~ name[1] ~ "\"");
+                "demangled `" ~ name[0] ~ "` as `" ~ r ~ "` but expected `" ~ name[1] ~ "`");
     }
     foreach ( i; staticIota!(table.length) )
     {
         enum r = demangle( table[i][0] );
         static assert( r == table[i][1],
-                "demangled \"" ~ table[i][0] ~ "\" as \"" ~ r ~ "\" but expected \"" ~ table[i][1] ~ "\"");
+                "demangled `" ~ table[i][0] ~ "` as `" ~ r ~ "` but expected `" ~ table[i][1] ~ "`");
     }
 
     {

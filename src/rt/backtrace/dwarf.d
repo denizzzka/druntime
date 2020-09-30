@@ -1,9 +1,46 @@
 /**
- * This code handles backtrace generation using DWARF debug_line section
- * in ELF and Mach-O files for Posix.
+ * Generates a human-readable stack-trace on POSIX targets using DWARF
+ *
+ * The common use case for printing a stack trace is when `toString` is called
+ * on a `Throwable` (see `object.d`). It will iterate on what is likely to be
+ * the default trace handler (see `core.runtime : defaultTraceHandler`).
+ * The class returned by `defaultTraceHandler` is what ends up calling into
+ * this module, through the use of `core.internal.traits : externDFunc`.
+ *
+ * The entry point of this module is `traceHandlerOpApplyImpl`,
+ * and the only really "public" symbol (since all `rt` symbols are private).
+ * In the future, this implementation should probably be made idiomatic,
+ * so that it can for example work with attributes.
+ *
+ * Resilience:
+ * As this module is used for diagnostic, it should handle failures
+ * as gracefully as possible. Having the runtime error out on printing
+ * the stack trace one is trying to debug would be quite a terrible UX.
+ * For this reason, this module works on a "best effort" basis and will
+ * sometimes print mangled symbols, or "???" when it cannot do anything
+ * more useful.
+ *
+ * Source_of_data:
+ * This module uses two main sources for generating human-readable data.
+ * First, it uses `backtrace_symbols` to obtain the name of the symbols
+ * (functions or methods) associated with the addresses.
+ * Since the names are mangled, it will also call into `core.demangle`,
+ * and doesn't need to use any DWARF information for this,
+ * however a future extension  could make use of the call frame information
+ * (See DWARF4 "6.4 Call Frame Information", PDF page 126).
+ *
+ * The other piece of data used is the DWARF `.debug_line` section,
+ * which contains the line informations of a program, necessary to associate
+ * the instruction address with its (file, line) information.
+ *
+ * Since debug lines informations are quite large, they are encoded using a
+ * program that is to be fed to a finite state machine.
+ * See `runStateMachine` and `readLineNumberProgram` for more details.
+ *
+ * DWARF_Version:
+ * This module only supports DWARF 3 and 4.
  *
  * Reference: http://www.dwarfstd.org/
- *
  * Copyright: Copyright Digital Mars 2015 - 2015.
  * License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Yazan Dabain, Sean Kelly
@@ -12,7 +49,7 @@
 
 module rt.backtrace.dwarf;
 
-private import core.internal.execinfo;
+import core.internal.execinfo;
 
 static if (hasExecinfo):
 
@@ -41,7 +78,7 @@ struct Location
     const(char)[] file = null;
     const(char)[] directory = null;
     int line = -1;
-    size_t address;
+    const(void)* address;
 }
 
 int traceHandlerOpApplyImpl(const(void*)[] callstack, scope int delegate(ref size_t, ref const(char[])) dg)
@@ -84,7 +121,7 @@ else
         {
             locations.length = callstack.length;
             foreach (size_t i; 0 .. callstack.length)
-                locations[i].address = cast(size_t) callstack[i];
+                locations[i].address = callstack[i];
 
             resolveAddresses(debugLineSectionData, locations[], image.baseAddress);
         }
@@ -135,10 +172,7 @@ else
                 buffer[maxBufferLength-4 .. maxBufferLength] = "... ";
                 bufferLength = maxBufferLength;
             }
-            static if (size_t.sizeof == 8)
-                appendToBuffer("[0x%llx]", callstack[i]);
-            else
-                appendToBuffer("[0x%x]", callstack[i]);
+            appendToBuffer("[%p]", callstack[i]);
 
             auto output = buffer[0 .. bufferLength];
             auto pos = i;
@@ -170,48 +204,69 @@ void resolveAddresses(const(ubyte)[] debugLineSectionData, Location[] locations,
         const lp = readLineNumberProgram(dbg);
 
         LocationInfo lastLoc = LocationInfo(-1, -1);
-        size_t lastAddress = 0x0;
+        const(void)* lastAddress;
 
         debug(DwarfDebugMachine) printf("program:\n");
         runStateMachine(lp,
-            (size_t address, LocationInfo locInfo, bool isEndSequence)
+            (const(void)* address, LocationInfo locInfo, bool isEndSequence)
             {
                 // adjust to ASLR offset
                 address += baseAddress;
-                debug(DwarfDebugMachine) printf("-- offsetting 0x%x to 0x%x\n", address - baseAddress, address);
-                // If loc.line != -1, then it has been set previously.
-                // Some implementations (eg. dmd) write an address to
-                // the debug data multiple times, but so far I have found
-                // that the first occurrence to be the correct one.
-                foreach (ref loc; locations) if (loc.line == -1)
+                debug (DwarfDebugMachine)
+                    printf("-- offsetting %p to %p\n", address - baseAddress, address);
+
+                foreach (ref loc; locations)
                 {
+                    // If loc.line != -1, then it has been set previously.
+                    // Some implementations (eg. dmd) write an address to
+                    // the debug data multiple times, but so far I have found
+                    // that the first occurrence to be the correct one.
+                    if (loc.line != -1)
+                        continue;
+
+                    // Can be called with either `locInfo` or `lastLoc`
+                    void update(const ref LocationInfo match)
+                    {
+                        const sourceFile = lp.sourceFiles[match.file - 1];
+                        debug (DwarfDebugMachine)
+                        {
+                            printf("-- found for [%p]:\n", loc.address);
+                            printf("--   file: %.*s\n",
+                                   cast(int) sourceFile.file.length, sourceFile.file.ptr);
+                            printf("--   line: %d\n", match.line);
+                        }
+                        // DMD emits entries with FQN, but other implmentations
+                        // (e.g. LDC) make use of directories
+                        // See https://github.com/dlang/druntime/pull/2945
+                        if (sourceFile.dirIndex != 0)
+                            loc.directory = lp.includeDirectories[sourceFile.dirIndex - 1];
+
+                        loc.file = sourceFile.file;
+                        loc.line = match.line;
+                        numberOfLocationsFound++;
+                    }
+
+                    // The state machine will not contain an entry for each
+                    // address, as consecutive addresses with the same file/line
+                    // are merged together to save on space, so we need to
+                    // check if our address is within two addresses we get
+                    // called with.
+                    //
+                    // Specs (DWARF v4, Section 6.2, PDF p.109) says:
+                    // "We shrink it with two techniques. First, we delete from
+                    // the matrix each row whose file, line, source column and
+                    // discriminator information is identical with that of its
+                    // predecessors.
                     if (loc.address == address)
-                    {
-                        debug(DwarfDebugMachine) printf("-- found for [0x%x]:\n", loc.address);
-                        debug(DwarfDebugMachine) printf("--   file: %.*s\n", cast(int) lp.sourceFiles[locInfo.file - 1].file.length, lp.sourceFiles[locInfo.file - 1].file.ptr);
-                        debug(DwarfDebugMachine) printf("--   line: %d\n", locInfo.line);
-                        auto sourceFile = lp.sourceFiles[locInfo.file - 1];
-                        loc.file = sourceFile.file;
-                        loc.directory = sourceFile.dirIndex == 0 ? null : lp.includeDirectories[sourceFile.dirIndex - 1];
-                        loc.line = locInfo.line;
-                        numberOfLocationsFound++;
-                    }
-                    else if (loc.address < address && lastAddress < loc.address && lastAddress != 0)
-                    {
-                        debug(DwarfDebugMachine) printf("-- found for [0x%x]:\n", loc.address);
-                        debug(DwarfDebugMachine) printf("--   file: %.*s\n", cast(int) lp.sourceFiles[lastLoc.file - 1].file.length, lp.sourceFiles[lastLoc.file - 1].file.ptr);
-                        debug(DwarfDebugMachine) printf("--   line: %d\n", lastLoc.line);
-                        auto sourceFile = lp.sourceFiles[lastLoc.file - 1];
-                        loc.file = sourceFile.file;
-                        loc.directory = sourceFile.dirIndex == 0 ? null : lp.includeDirectories[sourceFile.dirIndex - 1];
-                        loc.line = lastLoc.line;
-                        numberOfLocationsFound++;
-                    }
+                        update(locInfo);
+                    else if (lastAddress &&
+                             loc.address > lastAddress && loc.address < address)
+                        update(lastLoc);
                 }
 
                 if (isEndSequence)
                 {
-                    lastAddress = 0;
+                    lastAddress = null;
                 }
                 else
                 {
@@ -227,7 +282,44 @@ void resolveAddresses(const(ubyte)[] debugLineSectionData, Location[] locations,
     }
 }
 
-alias RunStateMachineCallback = bool delegate(size_t, LocationInfo, bool) @nogc nothrow;
+/**
+ * A callback type for `runStateMachine`
+ *
+ * The callback is called when certain specific opcode are encountered
+ * (a.k.a when a complete `LocationInfo` is encountered).
+ * See `runStateMachine` implementation and the DWARF specs for more detail.
+ *
+ * Params:
+ *   address = The address that the `LocationInfo` describes
+ *   info = The `LocationInfo` itself, describing `address`
+ *   isEndSequence = Whether the end of a sequence has been reached
+ */
+alias RunStateMachineCallback =
+    bool delegate(const(void)* address, LocationInfo info, bool isEndSequence)
+    @nogc nothrow;
+
+/**
+ * Run the state machine to generate line number matrix
+ *
+ * Line number informations generated by the compiler are stored in the
+ * `.debug_line` section. Conceptually, they can be seen as a large matrix,
+ * with row such as "file", "line", "column", "is_statement", etc...
+ * However such a matrix would be too big to store in an object file,
+ * so DWARF instead generate this matrix using bytecode fed to a state machine.
+ *
+ * Note:
+ * Each compilation unit can have its own line number program.
+ *
+ * See_Also:
+ * - DWARF v4, Section 6.2: Line Number Information
+ *
+ * Params:
+ *   lp = Program to execute
+ *   callback = Delegate to call whenever a LocationInfo is completed
+ *
+ * Returns:
+ *   `false` if an error happened (e.g. unknown opcode)
+ */
 bool runStateMachine(ref const(LineNumberProgram) lp, scope RunStateMachineCallback callback) @nogc nothrow
 {
     StateMachine machine;
@@ -257,15 +349,15 @@ bool runStateMachine(ref const(LineNumberProgram) lp, scope RunStateMachineCallb
                     {
                         case endSequence:
                             machine.isEndSequence = true;
-                            debug(DwarfDebugMachine) printf("endSequence 0x%x\n", machine.address);
+                            debug(DwarfDebugMachine) printf("endSequence %p\n", machine.address);
                             if (!callback(machine.address, LocationInfo(machine.fileIndex, machine.line), true)) return true;
                             machine = StateMachine.init;
                             machine.isStatement = lp.defaultIsStatement;
                             break;
 
                         case setAddress:
-                            size_t address = program.read!size_t();
-                            debug(DwarfDebugMachine) printf("setAddress 0x%x\n", address);
+                            const address = program.read!(void*)();
+                            debug(DwarfDebugMachine) printf("setAddress %p\n", address);
                             machine.address = address;
                             machine.operationIndex = 0;
                             break;
@@ -291,7 +383,7 @@ bool runStateMachine(ref const(LineNumberProgram) lp, scope RunStateMachineCallb
                     break;
 
                 case copy:
-                    debug(DwarfDebugMachine) printf("copy 0x%x\n", machine.address);
+                    debug(DwarfDebugMachine) printf("copy %p\n", machine.address);
                     if (!callback(machine.address, LocationInfo(machine.fileIndex, machine.line), false)) return true;
                     machine.isBasicBlock = false;
                     machine.isPrologueEnd = false;
@@ -302,7 +394,7 @@ bool runStateMachine(ref const(LineNumberProgram) lp, scope RunStateMachineCallb
                 case advancePC:
                     const operationAdvance = cast(size_t) readULEB128(program);
                     advanceAddressAndOpIndex(operationAdvance);
-                    debug(DwarfDebugMachine) printf("advancePC %d to 0x%x\n", cast(int) operationAdvance, machine.address);
+                    debug(DwarfDebugMachine) printf("advancePC %d to %p\n", cast(int) operationAdvance, machine.address);
                     break;
 
                 case advanceLine:
@@ -336,14 +428,14 @@ bool runStateMachine(ref const(LineNumberProgram) lp, scope RunStateMachineCallb
                 case constAddPC:
                     const operationAdvance = (255 - lp.opcodeBase) / lp.lineRange;
                     advanceAddressAndOpIndex(operationAdvance);
-                    debug(DwarfDebugMachine) printf("constAddPC 0x%x\n", machine.address);
+                    debug(DwarfDebugMachine) printf("constAddPC %p\n", machine.address);
                     break;
 
                 case fixedAdvancePC:
                     const add = program.read!ushort();
                     machine.address += add;
                     machine.operationIndex = 0;
-                    debug(DwarfDebugMachine) printf("fixedAdvancePC %d to 0x%x\n", cast(int) add, machine.address);
+                    debug(DwarfDebugMachine) printf("fixedAdvancePC %d to %p\n", cast(int) add, machine.address);
                     break;
 
                 case setPrologueEnd:
@@ -374,7 +466,10 @@ bool runStateMachine(ref const(LineNumberProgram) lp, scope RunStateMachineCallb
             const lineIncrement = lp.lineBase + (opcode % lp.lineRange);
             machine.line += lineIncrement;
 
-            debug(DwarfDebugMachine) printf("special %d %d to 0x%x line %d\n", cast(int) addressIncrement, cast(int) lineIncrement, machine.address, machine.line);
+            debug (DwarfDebugMachine)
+                printf("special %d %d to %p line %d\n", cast(int) addressIncrement,
+                       cast(int) lineIncrement, machine.address, machine.line);
+
             if (!callback(machine.address, LocationInfo(machine.fileIndex, machine.line), false)) return true;
 
             machine.isBasicBlock = false;
@@ -487,18 +582,18 @@ enum ExtendedOpcode : ubyte
 
 struct StateMachine
 {
-    size_t address = 0;
+    const(void)* address;
     uint operationIndex = 0;
     uint fileIndex = 1;
     uint line = 1;
     uint column = 0;
+    uint isa = 0;
+    uint discriminator = 0;
     bool isStatement;
     bool isBasicBlock = false;
     bool isEndSequence = false;
     bool isPrologueEnd = false;
     bool isEpilogueBegin = false;
-    uint isa = 0;
-    uint discriminator = 0;
 }
 
 struct LocationInfo
@@ -591,22 +686,21 @@ LineNumberProgram readLineNumberProgram(ref const(ubyte)[] data) @nogc nothrow
         return result;
     }
 
+    /// Directories are simply a sequence of NUL-terminated strings
     static const(char)[] readIncludeDirectoryEntry(ref const(ubyte)[] data)
     {
-        const length = strlen(cast(char*) data.ptr);
-        auto result = cast(const(char)[]) data[0 .. length];
-        debug(DwarfDebugMachine) printf("dir: %.*s\n", cast(int) length, result.ptr);
-        data = data[length + 1 .. $];
-        return result;
+        const ptr = cast(const(char)*) data.ptr;
+        const dir = ptr[0 .. strlen(ptr)];
+        data = data[dir.length + "\0".length .. $];
+        return dir;
     }
     lp.includeDirectories = readSequence!readIncludeDirectoryEntry(data);
 
     static SourceFile readFileNameEntry(ref const(ubyte)[] data)
     {
-        const length = strlen(cast(char*) data.ptr);
-        auto file = cast(const(char)[]) data[0 .. length];
-        debug(DwarfDebugMachine) printf("file: %.*s\n", cast(int) length, result.ptr);
-        data = data[length + 1 .. $];
+        const ptr = cast(const(char)*) data.ptr;
+        const file = ptr[0 .. strlen(ptr)];
+        data = data[file.length + "\0".length .. $];
 
         auto dirIndex = cast(size_t) data.readULEB128();
 
@@ -619,6 +713,29 @@ LineNumberProgram readLineNumberProgram(ref const(ubyte)[] data) @nogc nothrow
         );
     }
     lp.sourceFiles = readSequence!readFileNameEntry(data);
+
+    debug (DwarfDebugMachine)
+    {
+        printf("include_directories: (%d)\n", cast(int) lp.includeDirectories.length);
+        foreach (dir; lp.includeDirectories)
+            printf("\t- %.*s\n", cast(int) dir.length, dir.ptr);
+        printf("source_files: (%d)\n", cast(int) lp.sourceFiles.length);
+        foreach (ref sf; lp.sourceFiles)
+        {
+            if (sf.dirIndex > lp.includeDirectories.length)
+                printf("\t- Out of bound directory! (%llu): %.*s\n",
+                       sf.dirIndex, cast(int) sf.file.length, sf.file.ptr);
+            else if (sf.dirIndex > 0)
+            {
+                const dir = lp.includeDirectories[sf.dirIndex - 1];
+                printf("\t- (Dir:%llu:%.*s/)%.*s\n", sf.dirIndex,
+                       cast(int) dir.length, dir.ptr,
+                       cast(int) sf.file.length, sf.file.ptr);
+            }
+            else
+                printf("\t- %.*s\n", cast(int) sf.file.length, sf.file.ptr);
+        }
+    }
 
     const programStart = cast(size_t) (minimumInstructionLengthFieldOffset + lp.headerLength);
     const programEnd = cast(size_t) (dwarfVersionFieldOffset + lp.unitLength);

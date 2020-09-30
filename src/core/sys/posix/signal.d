@@ -151,30 +151,6 @@ version (Solaris)
         return sig;
     }
 }
-else version (CRuntime_Glibc)
-{
-    private extern (C) nothrow @nogc
-    {
-        int __libc_current_sigrtmin();
-        int __libc_current_sigrtmax();
-    }
-
-    @property int SIGRTMIN() nothrow @nogc {
-        __gshared static int sig = -1;
-        if (sig == -1) {
-            sig = __libc_current_sigrtmin();
-        }
-        return sig;
-    }
-
-    @property int SIGRTMAX() nothrow @nogc {
-        __gshared static int sig = -1;
-        if (sig == -1) {
-            sig = __libc_current_sigrtmax();
-        }
-        return sig;
-    }
-}
 else version (FreeBSD) {
     // Note: it appears that FreeBSD (prior to 7) and OSX do not support realtime signals
     // https://github.com/freebsd/freebsd/blob/e79c62ff68fc74d88cb6f479859f6fae9baa5101/sys/sys/signal.h#L117
@@ -190,9 +166,11 @@ else version (NetBSD)
     enum SIGRTMIN = 33;
     enum SIGRTMAX = 63;
 }
-else version (CRuntime_Bionic)
+else version (linux)
 {
-    // Switched to calling these functions since Lollipop
+    // Note: CRuntime_Bionic switched to calling these functions
+    // since Lollipop, and Glibc, UClib and Musl all implement them
+    // the same way since it's part of LSB.
     private extern (C) nothrow @nogc
     {
         int __libc_current_sigrtmin();
@@ -213,24 +191,6 @@ else version (CRuntime_Bionic)
             sig = __libc_current_sigrtmax();
         }
         return sig;
-    }
-}
-else version (CRuntime_UClibc)
-{
-    private extern (C) nothrow @nogc
-    {
-        int __libc_current_sigrtmin();
-        int __libc_current_sigrtmax();
-    }
-
-    @property int SIGRTMIN() nothrow @nogc
-    {
-        return __libc_current_sigrtmin();
-    }
-
-    @property int SIGRTMAX() nothrow @nogc
-    {
-        return __libc_current_sigrtmax();
     }
 }
 
@@ -2407,7 +2367,7 @@ else version (FreeBSD)
 
     enum MINSIGSTKSZ = 512 * 4;
     enum SIGSTKSZ    = (MINSIGSTKSZ + 32768);
-;
+
     //ucontext_t (defined in core.sys.posix.ucontext)
     //mcontext_t (defined in core.sys.posix.ucontext)
 
@@ -2531,7 +2491,7 @@ else version (NetBSD)
 
     enum MINSIGSTKSZ = 8192;
     enum SIGSTKSZ    = (MINSIGSTKSZ + 32768);
-;
+
     //ucontext_t (defined in core.sys.posix.ucontext)
     //mcontext_t (defined in core.sys.posix.ucontext)
 
@@ -2771,7 +2731,7 @@ else version (DragonFlyBSD)
 
     enum MINSIGSTKSZ = 8192;
     enum SIGSTKSZ    = (MINSIGSTKSZ + 32768);
-;
+
     //ucontext_t (defined in core.sys.posix.ucontext)
     //mcontext_t (defined in core.sys.posix.ucontext)
 
@@ -3637,14 +3597,14 @@ else version (DragonFlyBSD)
         int                       sigev_signo;
         int                       sigev_notify_kqueue;
         void /*pthread_attr_t*/ * sigev_notify_attributes;
-    };
+    }
     union _sigval_t
     {
         int                       sival_int;
         void                    * sival_ptr;
         int                       sigval_int;
         void                    * sigval_ptr;
-    };
+    }
     struct sigevent
     {
         int                       sigev_notify;

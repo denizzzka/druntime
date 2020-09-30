@@ -20,7 +20,10 @@ import core.memory : GC;
 import core.time;
 import core.exception : onOutOfMemoryError;
 import core.internal.traits : externDFunc;
+<<<<<<< HEAD
 
+=======
+>>>>>>> ldc-merge-2.094
 
 version (LDC)
 {
@@ -38,6 +41,7 @@ version (LDC)
     version (PPC)   version = PPC_Any;
     version (PPC64) version = PPC_Any;
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Platform Detection and Memory Allocation
@@ -129,6 +133,14 @@ version (Solaris)
     import core.sys.posix.sys.wait : idtype_t;
 }
 
+<<<<<<< HEAD
+=======
+version (GNU)
+{
+    import gcc.builtins;
+}
+
+>>>>>>> ldc-merge-2.094
 /**
  * Hook for whatever EH implementation is used to save/restore some data
  * per stack.
@@ -208,9 +220,12 @@ else
  * A new thread may be created using either derivation or composition, as
  * in the following example.
  */
+<<<<<<< HEAD
 version (DruntimeAbstractRt)
     public import external.core.thread: Thread;
 else
+=======
+>>>>>>> ldc-merge-2.094
 class Thread : ThreadBase
 {
     //
@@ -313,6 +328,7 @@ class Thread : ThreadBase
             m_addr = m_addr.init;
             CloseHandle( m_hndl );
             m_hndl = m_hndl.init;
+<<<<<<< HEAD
         }
         else version (Posix)
         {
@@ -454,6 +470,149 @@ class Thread : ThreadBase
                 onThreadError( "Error creating thread" );
         }
 
+=======
+        }
+        else version (Posix)
+        {
+            pthread_detach( m_addr );
+            m_addr = m_addr.init;
+        }
+        version (Darwin)
+        {
+            m_tmach = m_tmach.init;
+        }
+    }
+
+    //
+    // Thread entry point.  Invokes the function or delegate passed on
+    // construction (if any).
+    //
+    private final void run()
+    {
+        super.run();
+    }
+
+    /**
+     * Provides a reference to the calling thread.
+     *
+     * Returns:
+     *  The thread object representing the calling thread.  The result of
+     *  deleting this object is undefined.  If the current thread is not
+     *  attached to the runtime, a null reference is returned.
+     */
+    static Thread getThis() @safe nothrow @nogc
+    {
+        return ThreadBase.getThis().toThread;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Thread Context and GC Scanning Support
+    ///////////////////////////////////////////////////////////////////////////
+
+
+    version (Windows)
+    {
+        version (X86)
+        {
+            uint[8]         m_reg; // edi,esi,ebp,esp,ebx,edx,ecx,eax
+        }
+        else version (X86_64)
+        {
+            ulong[16]       m_reg; // rdi,rsi,rbp,rsp,rbx,rdx,rcx,rax
+                                   // r8,r9,r10,r11,r12,r13,r14,r15
+        }
+        else
+        {
+            static assert(false, "Architecture not supported." );
+        }
+    }
+    else version (Darwin)
+    {
+        version (X86)
+        {
+            uint[8]         m_reg; // edi,esi,ebp,esp,ebx,edx,ecx,eax
+        }
+        else version (X86_64)
+        {
+            ulong[16]       m_reg; // rdi,rsi,rbp,rsp,rbx,rdx,rcx,rax
+                                   // r8,r9,r10,r11,r12,r13,r14,r15
+        }
+        else version (AArch64)
+        {
+            ulong[33]       m_reg; // x0-x31, pc
+        }
+        else version (ARM)
+        {
+            uint[16]        m_reg; // r0-r15
+        }
+        else
+        {
+            static assert(false, "Architecture not supported." );
+        }
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    // General Actions
+    ///////////////////////////////////////////////////////////////////////////
+
+
+    /**
+     * Starts the thread and invokes the function or delegate passed upon
+     * construction.
+     *
+     * In:
+     *  This routine may only be called once per thread instance.
+     *
+     * Throws:
+     *  ThreadException if the thread fails to start.
+     */
+    final Thread start() nothrow
+    in
+    {
+        assert( !next && !prev );
+    }
+    do
+    {
+        auto wasThreaded  = multiThreadedFlag;
+        multiThreadedFlag = true;
+        scope( failure )
+        {
+            if ( !wasThreaded )
+                multiThreadedFlag = false;
+        }
+
+        version (Windows) {} else
+        version (Posix)
+        {
+            size_t stksz = adjustStackSize( m_sz );
+
+            pthread_attr_t  attr;
+
+            if ( pthread_attr_init( &attr ) )
+                onThreadError( "Error initializing thread attributes" );
+            if ( stksz && pthread_attr_setstacksize( &attr, stksz ) )
+                onThreadError( "Error initializing thread stack size" );
+        }
+
+        version (Windows)
+        {
+            // NOTE: If a thread is just executing DllMain()
+            //       while another thread is started here, it holds an OS internal
+            //       lock that serializes DllMain with CreateThread. As the code
+            //       might request a synchronization on slock (e.g. in thread_findByAddr()),
+            //       we cannot hold that lock while creating the thread without
+            //       creating a deadlock
+            //
+            // Solution: Create the thread in suspended state and then
+            //       add and resume it with slock acquired
+            assert(m_sz <= uint.max, "m_sz must be less than or equal to uint.max");
+            m_hndl = cast(HANDLE) _beginthreadex( null, cast(uint) m_sz, &thread_entryPoint, cast(void*) this, CREATE_SUSPENDED, &m_addr );
+            if ( cast(size_t) m_hndl == 0 )
+                onThreadError( "Error creating thread" );
+        }
+
+>>>>>>> ldc-merge-2.094
         slock.lock_nothrow();
         scope(exit) slock.unlock_nothrow();
         {
@@ -577,6 +736,7 @@ class Thread : ThreadBase
         @property static int PRIORITY_DEFAULT() @nogc nothrow pure @safe
         {
             return THREAD_PRIORITY_NORMAL;
+<<<<<<< HEAD
         }
     }
     else
@@ -587,6 +747,18 @@ class Thread : ThreadBase
             int PRIORITY_DEFAULT = int.min;
             int PRIORITY_MAX = int.min;
         }
+=======
+        }
+    }
+    else
+    {
+        private struct Priority
+        {
+            int PRIORITY_MIN = int.min;
+            int PRIORITY_DEFAULT = int.min;
+            int PRIORITY_MAX = int.min;
+        }
+>>>>>>> ldc-merge-2.094
 
         /*
         Lazily loads one of the members stored in a hidden global variable of
@@ -1002,6 +1174,7 @@ private extern(D) static void thread_yield() @nogc nothrow
 unittest
 {
     class DerivedThread : Thread
+<<<<<<< HEAD
     {
         this()
         {
@@ -1057,11 +1230,49 @@ unittest
     {
         assert( t.msg == MSG );
     }
+=======
+    {
+        this()
+        {
+            super(&run);
+        }
+
+    private:
+        void run()
+        {
+            // Derived thread running.
+        }
+    }
+
+    void threadFunc()
+    {
+        // Composed thread running.
+    }
+
+    // create and start instances of each type
+    auto derived = new DerivedThread().start();
+    auto composed = new Thread(&threadFunc).start();
+    new Thread({
+        // Codes to run in the newly created thread.
+    }).start();
+}
+
+unittest
+{
+    int x = 0;
+
+    new Thread(
+    {
+        x++;
+    }).start().join();
+    assert( x == 1 );
+>>>>>>> ldc-merge-2.094
 }
 
 
 unittest
 {
+<<<<<<< HEAD
     // use >PAGESIZE to avoid stack overflow (e.g. in an syscall)
     auto thr = new Thread(function{}, 4096 + 1).start();
     thr.join();
@@ -1070,6 +1281,204 @@ unittest
 
 unittest
 {
+    import core.memory : GC;
+=======
+    enum MSG = "Test message.";
+    string caughtMsg;
+
+    try
+    {
+        new Thread(
+        {
+            throw new Exception( MSG );
+        }).start().join();
+        assert( false, "Expected rethrown exception." );
+    }
+    catch ( Throwable t )
+    {
+        assert( t.msg == MSG );
+    }
+}
+>>>>>>> ldc-merge-2.094
+
+    auto t1 = new Thread({
+        foreach (_; 0 .. 20)
+            ThreadBase.getAll;
+    }).start;
+    auto t2 = new Thread({
+        foreach (_; 0 .. 20)
+            GC.collect;
+    }).start;
+    t1.join();
+    t2.join();
+}
+
+unittest
+{
+<<<<<<< HEAD
+    import core.sync.semaphore;
+    auto sem = new Semaphore();
+
+    auto t = new Thread(
+    {
+        sem.notify();
+        Thread.sleep(100.msecs);
+    }).start();
+=======
+    // use >PAGESIZE to avoid stack overflow (e.g. in an syscall)
+    auto thr = new Thread(function{}, 4096 + 1).start();
+    thr.join();
+}
+>>>>>>> ldc-merge-2.094
+
+    sem.wait(); // thread cannot be detached while being started
+    thread_detachInstance(t);
+    foreach (t2; Thread)
+        assert(t !is t2);
+    t.join();
+}
+
+unittest
+{
+<<<<<<< HEAD
+    // NOTE: This entire test is based on the assumption that no
+    //       memory is allocated after the child thread is
+    //       started. If an allocation happens, a collection could
+    //       trigger, which would cause the synchronization below
+    //       to cause a deadlock.
+    // NOTE: DO NOT USE LOCKS IN CRITICAL REGIONS IN NORMAL CODE.
+
+    import core.sync.semaphore;
+
+    auto sema = new Semaphore(),
+         semb = new Semaphore();
+
+    auto thr = new Thread(
+    {
+        thread_enterCriticalRegion();
+        assert(thread_inCriticalRegion());
+        sema.notify();
+
+        semb.wait();
+        assert(thread_inCriticalRegion());
+
+        thread_exitCriticalRegion();
+        assert(!thread_inCriticalRegion());
+        sema.notify();
+
+        semb.wait();
+        assert(!thread_inCriticalRegion());
+    });
+
+    thr.start();
+
+    sema.wait();
+    synchronized (ThreadBase.criticalRegionLock)
+        assert(thr.m_isInCriticalRegion);
+    semb.notify();
+
+    sema.wait();
+    synchronized (ThreadBase.criticalRegionLock)
+        assert(!thr.m_isInCriticalRegion);
+    semb.notify();
+
+    thr.join();
+}
+
+unittest
+{
+    import core.sync.semaphore;
+
+    shared bool inCriticalRegion;
+    auto sema = new Semaphore(),
+         semb = new Semaphore();
+
+    auto thr = new Thread(
+    {
+        thread_enterCriticalRegion();
+        inCriticalRegion = true;
+        sema.notify();
+        semb.wait();
+
+        Thread.sleep(dur!"msecs"(1));
+        inCriticalRegion = false;
+        thread_exitCriticalRegion();
+    });
+    thr.start();
+
+    sema.wait();
+    assert(inCriticalRegion);
+    semb.notify();
+
+    thread_suspendAll();
+    assert(!inCriticalRegion);
+    thread_resumeAll();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// GC Support Routines
+///////////////////////////////////////////////////////////////////////////////
+
+version (CoreDdoc)
+{
+    /**
+     * Instruct the thread module, when initialized, to use a different set of
+     * signals besides SIGUSR1 and SIGUSR2 for suspension and resumption of threads.
+     * This function should be called at most once, prior to thread_init().
+     * This function is Posix-only.
+     */
+    extern (C) void thread_setGCSignals(int suspendSignalNo, int resumeSignalNo) nothrow @nogc
+    {
+    }
+}
+else version (Posix)
+{
+    extern (C) void thread_setGCSignals(int suspendSignalNo, int resumeSignalNo) nothrow @nogc
+    in
+    {
+        assert(suspendSignalNumber == 0);
+        assert(resumeSignalNumber  == 0);
+        assert(suspendSignalNo != 0);
+        assert(resumeSignalNo  != 0);
+    }
+    out
+    {
+        assert(suspendSignalNumber != 0);
+        assert(resumeSignalNumber  != 0);
+    }
+    do
+    {
+        suspendSignalNumber = suspendSignalNo;
+        resumeSignalNumber  = resumeSignalNo;
+    }
+}
+
+version (Posix)
+{
+    __gshared int suspendSignalNumber;
+    __gshared int resumeSignalNumber;
+}
+
+version (DruntimeAbstractRt)
+{
+    import external.core.thread : external_attachThread;
+
+    private extern (D) ThreadBase attachThread(ThreadBase _thisThread) @nogc
+    {
+        return external_attachThread(_thisThread);
+    }
+}
+else
+private extern (D) ThreadBase attachThread(ThreadBase _thisThread) @nogc
+{
+    Thread thisThread = _thisThread.toThread();
+
+    StackContext* thisContext = &thisThread.m_main;
+    assert( thisContext == thisThread.m_curr );
+
+    version (Windows)
+    {
+=======
     import core.memory : GC;
 
     auto t1 = new Thread({
@@ -1222,16 +1631,6 @@ version (Posix)
     __gshared int resumeSignalNumber;
 }
 
-version (DruntimeAbstractRt)
-{
-    import external.core.thread : external_attachThread;
-
-    private extern (D) ThreadBase attachThread(ThreadBase _thisThread) @nogc
-    {
-        return external_attachThread(_thisThread);
-    }
-}
-else
 private extern (D) ThreadBase attachThread(ThreadBase _thisThread) @nogc
 {
     Thread thisThread = _thisThread.toThread();
@@ -1241,6 +1640,7 @@ private extern (D) ThreadBase attachThread(ThreadBase _thisThread) @nogc
 
     version (Windows)
     {
+>>>>>>> ldc-merge-2.094
         thisThread.m_addr  = GetCurrentThreadId();
         thisThread.m_hndl  = GetCurrentThreadHandle();
         thisContext.bstack = getStackBottom();
@@ -1351,6 +1751,7 @@ version (Windows)
 version (LDC) {} else
 version (PPC64) version = ExternStackShell;
 
+<<<<<<< HEAD
 version (ExternStackShell)
 {
     extern(D) public void callWithStackShell(scope void delegate(void* sp) nothrow fn) nothrow;
@@ -1362,9 +1763,24 @@ else
     in
     {
         assert(fn);
-    }
-    do
+=======
+// Calls the given delegate, passing the current thread's stack pointer to it.
+package extern(D) void callWithStackShell(scope callWithStackShellDg fn) nothrow
+in (fn)
+{
+    // The purpose of the 'shell' is to ensure all the registers get
+    // put on the stack so they'll be scanned. We only need to push
+    // the callee-save registers.
+    void *sp = void;
+    version (GNU)
     {
+        __builtin_unwind_init();
+        sp = &sp;
+>>>>>>> ldc-merge-2.094
+    }
+    else version (AsmX86_Posix)
+    {
+<<<<<<< HEAD
         // The purpose of the 'shell' is to ensure all the registers get
         // put on the stack so they'll be scanned. We only need to push
         // the callee-save registers.
@@ -1514,6 +1930,145 @@ else
 
         fn(sp);
     }
+=======
+        size_t[3] regs = void;
+        asm pure nothrow @nogc
+        {
+            mov [regs + 0 * 4], EBX;
+            mov [regs + 1 * 4], ESI;
+            mov [regs + 2 * 4], EDI;
+
+            mov sp[EBP], ESP;
+        }
+    }
+    else version (AsmX86_Windows)
+    {
+        size_t[3] regs = void;
+        asm pure nothrow @nogc
+        {
+            mov [regs + 0 * 4], EBX;
+            mov [regs + 1 * 4], ESI;
+            mov [regs + 2 * 4], EDI;
+
+            mov sp[EBP], ESP;
+        }
+    }
+    else version (AsmX86_64_Posix)
+    {
+        size_t[5] regs = void;
+        asm pure nothrow @nogc
+        {
+            mov [regs + 0 * 8], RBX;
+            mov [regs + 1 * 8], R12;
+            mov [regs + 2 * 8], R13;
+            mov [regs + 3 * 8], R14;
+            mov [regs + 4 * 8], R15;
+
+            mov sp[RBP], RSP;
+        }
+    }
+    else version (AsmX86_64_Windows)
+    {
+        size_t[7] regs = void;
+        asm pure nothrow @nogc
+        {
+            mov [regs + 0 * 8], RBX;
+            mov [regs + 1 * 8], RSI;
+            mov [regs + 2 * 8], RDI;
+            mov [regs + 3 * 8], R12;
+            mov [regs + 4 * 8], R13;
+            mov [regs + 5 * 8], R14;
+            mov [regs + 6 * 8], R15;
+
+            mov sp[RBP], RSP;
+        }
+    }
+    else version (LDC)
+    {
+        version (PPC_Any)
+        {
+            // Nonvolatile registers, according to:
+            // System V Application Binary Interface
+            // PowerPC Processor Supplement, September 1995
+            // ELFv1: 64-bit PowerPC ELF ABI Supplement 1.9, July 2004
+            // ELFv2: Power Architecture, 64-Bit ELV V2 ABI Specification,
+            //        OpenPOWER ABI for Linux Supplement, July 2014
+            size_t[18] regs = void;
+            static foreach (i; 0 .. regs.length)
+            {{
+                enum int j = 14 + i; // source register
+                static if (j == 21)
+                {
+                    // Work around LLVM bug 21443 (http://llvm.org/bugs/show_bug.cgi?id=21443)
+                    // Because we clobber r0 a different register is chosen
+                    asm pure nothrow @nogc { ("std "~j.stringof~", %0") : "=m" (regs[i]) : : "r0"; }
+                }
+                else
+                    asm pure nothrow @nogc { ("std "~j.stringof~", %0") : "=m" (regs[i]); }
+            }}
+
+            asm pure nothrow @nogc { "std 1, %0" : "=m" (sp); }
+        }
+        else version (AArch64)
+        {
+            // Callee-save registers, x19-x28 according to AAPCS64, section
+            // 5.1.1.  Include x29 fp because it optionally can be a callee
+            // saved reg
+            size_t[11] regs = void;
+            // store the registers in pairs
+            asm pure nothrow @nogc
+            {
+                "stp x19, x20, %0" : "=m" (regs[ 0]), "=m" (regs[1]);
+                "stp x21, x22, %0" : "=m" (regs[ 2]), "=m" (regs[3]);
+                "stp x23, x24, %0" : "=m" (regs[ 4]), "=m" (regs[5]);
+                "stp x25, x26, %0" : "=m" (regs[ 6]), "=m" (regs[7]);
+                "stp x27, x28, %0" : "=m" (regs[ 8]), "=m" (regs[9]);
+                "str x29, %0"      : "=m" (regs[10]);
+                "mov %0, sp"       : "=r" (sp);
+            }
+        }
+        else version (ARM)
+        {
+            // Callee-save registers, according to AAPCS, section 5.1.1.
+            // arm and thumb2 instructions
+            size_t[8] regs = void;
+            asm pure nothrow @nogc
+            {
+                "stm %0, {r4-r11}" : : "r" (regs.ptr) : "memory";
+                "mov %0, sp"       : "=r" (sp);
+            }
+        }
+        else version (MIPS_Any)
+        {
+            version (MIPS32)      enum store = "sw";
+            else version (MIPS64) enum store = "sd";
+            else static assert(0);
+
+            // Callee-save registers, according to MIPS Calling Convention
+            // and MIPSpro N32 ABI Handbook, chapter 2, table 2-1.
+            // FIXME: Should $28 (gp) and $30 (s8) be saved, too?
+            size_t[8] regs = void;
+            asm pure nothrow @nogc { ".set noat"; }
+            static foreach (i; 0 .. regs.length)
+            {{
+                enum int j = 16 + i; // source register
+                asm pure nothrow @nogc { (store ~ " $"~j.stringof~", %0") : "=m" (regs[i]); }
+            }}
+            asm pure nothrow @nogc { (store ~ " $29, %0") : "=m" (sp); }
+            asm pure nothrow @nogc { ".set at"; }
+        }
+        else
+        {
+            static assert(false, "Architecture not supported.");
+        }
+    }
+    else
+    {
+        static assert(false, "Architecture not supported.");
+    }
+
+    fn(sp);
+>>>>>>> ldc-merge-2.094
 }
 
 version (Solaris)
@@ -1570,6 +2125,7 @@ extern (C) @nogc nothrow
     version (OpenBSD) int pthread_stackseg_np(pthread_t thread, stack_t* sinfo);
 }
 
+<<<<<<< HEAD
 version (LDC)
 {
     version (X86)      version = LDC_stackTopAsm;
@@ -1578,13 +2134,28 @@ version (LDC)
     version (PPC_Any)  version = LDC_stackTopAsm;
     version (MIPS_Any) version = LDC_stackTopAsm;
 
+=======
+
+version (LDC)
+{
+    version (X86)      version = LDC_stackTopAsm;
+    version (X86_64)   version = LDC_stackTopAsm;
+    version (ARM_Any)  version = LDC_stackTopAsm;
+    version (PPC_Any)  version = LDC_stackTopAsm;
+    version (MIPS_Any) version = LDC_stackTopAsm;
+
+>>>>>>> ldc-merge-2.094
     version (LDC_stackTopAsm)
     {
         /* The inline assembler is written in a style that the code can be inlined.
          * If it isn't, the function is still naked, so the caller's stack pointer
          * is used nevertheless.
          */
+<<<<<<< HEAD
         package(core.thread) extern(D) void* getStackTop() nothrow @nogc @naked
+=======
+        package extern(D) void* getStackTop() nothrow @nogc @naked
+>>>>>>> ldc-merge-2.094
         {
             version (X86)
                 return __asm!(void*)("movl %esp, $0", "=r");
@@ -1607,7 +2178,11 @@ version (LDC)
          * the slightly different meaning the function must neither be inlined
          * nor naked.
          */
+<<<<<<< HEAD
         package(core.thread) extern(D) void* getStackTop() nothrow @nogc
+=======
+        package extern(D) void* getStackTop() nothrow @nogc
+>>>>>>> ldc-merge-2.094
         {
             import ldc.intrinsics;
             pragma(LDC_never_inline);
@@ -1627,6 +2202,7 @@ package extern(D) void* getStackTop() nothrow @nogc
     else
         static assert(false, "Architecture not supported.");
 }
+<<<<<<< HEAD
 
 version (DruntimeAbstractRt)
 {
@@ -1641,6 +2217,13 @@ else
 version (LDC_Windows)
 {
     package(core.thread) void* getStackBottom() nothrow @nogc @naked
+=======
+
+
+version (LDC_Windows)
+{
+    package extern(D) void* getStackBottom() nothrow @nogc @naked
+>>>>>>> ldc-merge-2.094
     {
         version (X86)
             return __asm!(void*)("mov %fs:(4), $0", "=r");
@@ -1671,6 +2254,7 @@ package extern(D) void* getStackBottom() nothrow @nogc
     {
         import core.sys.darwin.pthread;
         return pthread_get_stackaddr_np(pthread_self());
+<<<<<<< HEAD
     }
     else version (PThread_Getattr_NP)
     {
@@ -2019,7 +2603,51 @@ extern (C) void thread_suspendAll() nothrow
                     goto Lagain;
              }
         }
+=======
     }
+    else version (PThread_Getattr_NP)
+    {
+        pthread_attr_t attr;
+        void* addr; size_t size;
+
+        pthread_attr_init(&attr);
+        pthread_getattr_np(pthread_self(), &attr);
+        pthread_attr_getstack(&attr, &addr, &size);
+        pthread_attr_destroy(&attr);
+        static if (isStackGrowingDown)
+            addr += size;
+        return addr;
+    }
+    else version (PThread_Attr_Get_NP)
+    {
+        pthread_attr_t attr;
+        void* addr; size_t size;
+
+        pthread_attr_init(&attr);
+        pthread_attr_get_np(pthread_self(), &attr);
+        pthread_attr_getstack(&attr, &addr, &size);
+        pthread_attr_destroy(&attr);
+        static if (isStackGrowingDown)
+            addr += size;
+        return addr;
+    }
+    else version (OpenBSD)
+    {
+        stack_t stk;
+
+        pthread_stackseg_np(pthread_self(), &stk);
+        return stk.ss_sp;
+    }
+    else version (Solaris)
+    {
+        stack_t stk;
+
+        thr_stksegment(&stk);
+        return stk.ss_sp;
+>>>>>>> ldc-merge-2.094
+    }
+    else
+        static assert(false, "Platform not supported.");
 }
 
 /**
@@ -2036,7 +2664,11 @@ extern (C) void thread_suspendAll() nothrow
  * Throws:
  *  ThreadError if the resume fails for a running thread.
  */
+<<<<<<< HEAD
 private extern (D) void resume(ThreadBase _t) nothrow
+=======
+private extern (D) bool suspend( Thread t ) nothrow
+>>>>>>> ldc-merge-2.094
 {
     Thread t = _t.toThread;
 
@@ -2205,6 +2837,7 @@ extern (C) void thread_term() @nogc
 }
 
 
+<<<<<<< HEAD
 ///////////////////////////////////////////////////////////////////////////////
 // Thread Entry Point and Signal Handlers
 ///////////////////////////////////////////////////////////////////////////////
@@ -2217,6 +2850,353 @@ version (DruntimeAbstractRt)
         thread_resumeHandler;
 }
 else version (Windows)
+{
+    private
+=======
+        Thread.criticalRegionLock.lock_nothrow();
+        scope (exit) Thread.criticalRegionLock.unlock_nothrow();
+        size_t cnt;
+        Thread t = ThreadBase.sm_tbeg.toThread;
+        while (t)
+        {
+            auto tn = t.next.toThread;
+            if (suspend(t))
+                ++cnt;
+            t = tn;
+        }
+
+        version (Darwin)
+        {}
+        else version (Posix)
+        {
+            // subtract own thread
+            assert(cnt >= 1);
+            --cnt;
+        Lagain:
+            // wait for semaphore notifications
+            for (; cnt; --cnt)
+            {
+                while (sem_wait(&suspendCount) != 0)
+                {
+                    if (errno != EINTR)
+                        onThreadError("Unable to wait for semaphore");
+                    errno = 0;
+                }
+            }
+            version (FreeBSD)
+            {
+                // avoid deadlocks, see Issue 13416
+                t = ThreadBase.sm_tbeg.toThread;
+                while (t)
+                {
+                    auto tn = t.next;
+                    if (t.m_suspendagain && suspend(t))
+                        ++cnt;
+                    t = tn.toThread;
+                }
+                if (cnt)
+                    goto Lagain;
+             }
+        }
+    }
+}
+
+/**
+ * Resume the specified thread and unload stack and register information.
+ * If the supplied thread is the calling thread, stack and register
+ * information will be unloaded but the thread will not be resumed.  If
+ * the resume operation fails and the thread is not running then it will
+ * be removed from the global thread list, otherwise an exception will be
+ * thrown.
+ *
+ * Params:
+ *  t = The thread to resume.
+ *
+ * Throws:
+ *  ThreadError if the resume fails for a running thread.
+ */
+private extern (D) void resume(ThreadBase _t) nothrow
+{
+    Thread t = _t.toThread;
+
+    version (Windows)
+>>>>>>> ldc-merge-2.094
+    {
+        //
+        // Entry point for Windows threads
+        //
+        extern (Windows) uint thread_entryPoint( void* arg ) nothrow
+        {
+            Thread  obj = cast(Thread) arg;
+            assert( obj );
+
+            obj.initDataStorage();
+
+            Thread.setThis(obj);
+            Thread.add(obj);
+            scope (exit)
+            {
+                Thread.remove(obj);
+                obj.destroyDataStorage();
+            }
+            Thread.add(&obj.m_main);
+
+            // NOTE: No GC allocations may occur until the stack pointers have
+            //       been set and Thread.getThis returns a valid reference to
+            //       this thread object (this latter condition is not strictly
+            //       necessary on Windows but it should be followed for the
+            //       sake of consistency).
+
+            // TODO: Consider putting an auto exception object here (using
+            //       alloca) forOutOfMemoryError plus something to track
+            //       whether an exception is in-flight?
+
+            void append( Throwable t )
+            {
+                obj.m_unhandled = Throwable.chainTogether(obj.m_unhandled, t);
+            }
+
+            version (D_InlineAsm_X86)
+            {
+                asm nothrow @nogc { fninit; }
+            }
+
+            try
+            {
+                rt_moduleTlsCtor();
+                try
+                {
+                    obj.run();
+                }
+                catch ( Throwable t )
+                {
+                    append( t );
+                }
+                rt_moduleTlsDtor();
+            }
+            catch ( Throwable t )
+            {
+                append( t );
+            }
+            return 0;
+        }
+
+<<<<<<< HEAD
+
+        HANDLE GetCurrentThreadHandle() nothrow @nogc
+        {
+            const uint DUPLICATE_SAME_ACCESS = 0x00000002;
+
+            HANDLE curr = GetCurrentThread(),
+                   proc = GetCurrentProcess(),
+                   hndl;
+
+            DuplicateHandle( proc, curr, proc, &hndl, 0, TRUE, DUPLICATE_SAME_ACCESS );
+            return hndl;
+        }
+    }
+}
+else version (Posix)
+{
+    private
+    {
+        import core.stdc.errno;
+        import core.sys.posix.semaphore;
+        import core.sys.posix.stdlib; // for malloc, valloc, free, atexit
+        import core.sys.posix.pthread;
+        import core.sys.posix.signal;
+        import core.sys.posix.time;
+
+        version (Darwin)
+        {
+            import core.sys.darwin.mach.thread_act;
+            import core.sys.darwin.pthread : pthread_mach_thread_np;
+        }
+
+        //
+        // Entry point for POSIX threads
+        //
+        extern (C) void* thread_entryPoint( void* arg ) nothrow
+        {
+            version (Shared)
+            {
+                Thread obj = cast(Thread)(cast(void**)arg)[0];
+                auto loadedLibraries = (cast(void**)arg)[1];
+                .free(arg);
+            }
+            else
+            {
+                Thread obj = cast(Thread)arg;
+            }
+            assert( obj );
+
+            // loadedLibraries need to be inherited from parent thread
+            // before initilizing GC for TLS (rt_tlsgc_init)
+            version (Shared)
+            {
+                externDFunc!("rt.sections_elf_shared.inheritLoadedLibraries",
+                             void function(void*) @nogc nothrow)(loadedLibraries);
+            }
+
+            obj.initDataStorage();
+
+            atomicStore!(MemoryOrder.raw)(obj.m_isRunning, true);
+            Thread.setThis(obj); // allocates lazy TLS (see Issue 11981)
+            Thread.add(obj);     // can only receive signals from here on
+            scope (exit)
+            {
+                Thread.remove(obj);
+                atomicStore!(MemoryOrder.raw)(obj.m_isRunning, false);
+                obj.destroyDataStorage();
+            }
+            Thread.add(&obj.m_main);
+
+            static extern (C) void thread_cleanupHandler( void* arg ) nothrow @nogc
+            {
+                Thread  obj = cast(Thread) arg;
+                assert( obj );
+
+                // NOTE: If the thread terminated abnormally, just set it as
+                //       not running and let thread_suspendAll remove it from
+                //       the thread list.  This is safer and is consistent
+                //       with the Windows thread code.
+                atomicStore!(MemoryOrder.raw)(obj.m_isRunning,false);
+            }
+
+            // NOTE: Using void to skip the initialization here relies on
+            //       knowledge of how pthread_cleanup is implemented.  It may
+            //       not be appropriate for all platforms.  However, it does
+            //       avoid the need to link the pthread module.  If any
+            //       implementation actually requires default initialization
+            //       then pthread_cleanup should be restructured to maintain
+            //       the current lack of a link dependency.
+            static if ( __traits( compiles, pthread_cleanup ) )
+            {
+                pthread_cleanup cleanup = void;
+                cleanup.push( &thread_cleanupHandler, cast(void*) obj );
+            }
+            else static if ( __traits( compiles, pthread_cleanup_push ) )
+            {
+                pthread_cleanup_push( &thread_cleanupHandler, cast(void*) obj );
+            }
+            else
+            {
+                static assert( false, "Platform not supported." );
+            }
+
+=======
+
+/**
+ * Initializes the thread module.  This function must be called by the
+ * garbage collector on startup and before any other thread routines
+ * are called.
+ */
+extern (C) void thread_init() @nogc
+{
+    // NOTE: If thread_init itself performs any allocations then the thread
+    //       routines reserved for garbage collector use may be called while
+    //       thread_init is being processed.  However, since no memory should
+    //       exist to be scanned at this point, it is sufficient for these
+    //       functions to detect the condition and return immediately.
+
+    initLowlevelThreads();
+    Thread.initLocks();
+
+    // The Android VM runtime intercepts SIGUSR1 and apparently doesn't allow
+    // its signal handler to run, so swap the two signals on Android, since
+    // thread_resumeHandler does nothing.
+    version (Android) thread_setGCSignals(SIGUSR2, SIGUSR1);
+
+    version (Darwin)
+    {
+        // thread id different in forked child process
+        static extern(C) void initChildAfterFork()
+        {
+            auto thisThread = Thread.getThis();
+            thisThread.m_addr = pthread_self();
+            assert( thisThread.m_addr != thisThread.m_addr.init );
+            thisThread.m_tmach = pthread_mach_thread_np( thisThread.m_addr );
+            assert( thisThread.m_tmach != thisThread.m_tmach.init );
+       }
+        pthread_atfork(null, null, &initChildAfterFork);
+    }
+    else version (Posix)
+    {
+        if ( suspendSignalNumber == 0 )
+        {
+            suspendSignalNumber = SIGUSR1;
+        }
+
+        if ( resumeSignalNumber == 0 )
+        {
+            resumeSignalNumber = SIGUSR2;
+        }
+
+        int         status;
+        sigaction_t sigusr1 = void;
+        sigaction_t sigusr2 = void;
+
+        // This is a quick way to zero-initialize the structs without using
+        // memset or creating a link dependency on their static initializer.
+        (cast(byte*) &sigusr1)[0 .. sigaction_t.sizeof] = 0;
+        (cast(byte*) &sigusr2)[0 .. sigaction_t.sizeof] = 0;
+
+        // NOTE: SA_RESTART indicates that system calls should restart if they
+        //       are interrupted by a signal, but this is not available on all
+        //       Posix systems, even those that support multithreading.
+        static if ( __traits( compiles, SA_RESTART ) )
+            sigusr1.sa_flags = SA_RESTART;
+        else
+            sigusr1.sa_flags   = 0;
+        sigusr1.sa_handler = &thread_suspendHandler;
+        // NOTE: We want to ignore all signals while in this handler, so fill
+        //       sa_mask to indicate this.
+        status = sigfillset( &sigusr1.sa_mask );
+        assert( status == 0 );
+
+        // NOTE: Since resumeSignalNumber should only be issued for threads within the
+        //       suspend handler, we don't want this signal to trigger a
+        //       restart.
+        sigusr2.sa_flags   = 0;
+        sigusr2.sa_handler = &thread_resumeHandler;
+        // NOTE: We want to ignore all signals while in this handler, so fill
+        //       sa_mask to indicate this.
+        status = sigfillset( &sigusr2.sa_mask );
+        assert( status == 0 );
+
+        status = sigaction( suspendSignalNumber, &sigusr1, null );
+        assert( status == 0 );
+
+        status = sigaction( resumeSignalNumber, &sigusr2, null );
+        assert( status == 0 );
+
+        status = sem_init( &suspendCount, 0, 0 );
+        assert( status == 0 );
+    }
+    if (typeid(Thread).initializer.ptr)
+        _mainThreadStore[] = typeid(Thread).initializer[];
+    Thread.sm_main = attachThread((cast(Thread)_mainThreadStore.ptr).__ctor());
+}
+
+private alias MainThreadStore = void[__traits(classInstanceSize, Thread)];
+package __gshared align(Thread.alignof) MainThreadStore _mainThreadStore;
+
+/**
+ * Terminates the thread module. No other thread routine may be called
+ * afterwards.
+ */
+extern (C) void thread_term() @nogc
+{
+    thread_term_tpl!(Thread)(_mainThreadStore);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Thread Entry Point and Signal Handlers
+///////////////////////////////////////////////////////////////////////////////
+
+
+version (Windows)
 {
     private
     {
@@ -2381,6 +3361,7 @@ else version (Posix)
                 static assert( false, "Platform not supported." );
             }
 
+>>>>>>> ldc-merge-2.094
             // NOTE: No GC allocations may occur until the stack pointers have
             //       been set and Thread.getThis returns a valid reference to
             //       this thread object (this latter condition is not strictly
@@ -2453,6 +3434,7 @@ else version (Posix)
                 //       be gone before the stack cleanup code is called below.
                 Thread obj = Thread.getThis();
                 assert(obj !is null);
+<<<<<<< HEAD
 
                 if ( !obj.m_lock )
                 {
@@ -2480,6 +3462,35 @@ else version (Posix)
                 }
             }
 
+=======
+
+                if ( !obj.m_lock )
+                {
+                    obj.m_curr.tstack = getStackTop();
+                }
+
+                sigset_t    sigres = void;
+                int         status;
+
+                status = sigfillset( &sigres );
+                assert( status == 0 );
+
+                status = sigdelset( &sigres, resumeSignalNumber );
+                assert( status == 0 );
+
+                version (FreeBSD) obj.m_suspendagain = false;
+                status = sem_post( &suspendCount );
+                assert( status == 0 );
+
+                sigsuspend( &sigres );
+
+                if ( !obj.m_lock )
+                {
+                    obj.m_curr.tstack = obj.m_curr.bstack;
+                }
+            }
+
+>>>>>>> ldc-merge-2.094
             // avoid deadlocks on FreeBSD, see Issue 13416
             version (FreeBSD)
             {
@@ -2589,6 +3600,10 @@ version (DragonFlyBSD) unittest
     thr.join();
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> ldc-merge-2.094
 ///////////////////////////////////////////////////////////////////////////////
 // lowlovel threading support
 ///////////////////////////////////////////////////////////////////////////////

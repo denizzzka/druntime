@@ -4,7 +4,7 @@ include ../common.mak
 ifneq (,$(findstring win,$(OS)))
 
 CXX:=cl.exe
-TESTS:=array allocator memory new string vector
+TESTS:=array allocator memory new string utility vector
 
 .PHONY: all clean
 
@@ -33,7 +33,7 @@ else
 
 HASCPP17:=`echo wow | $(CXX) -std=c++17 -E -xc++ - > /dev/null 2>&1 && echo yes`
 
-TESTS:=allocator new
+TESTS:=allocator new utility
 TESTS11:=array
 TESTS17:=string_view
 OLDABITESTS:=

@@ -363,20 +363,35 @@ template hasIndirections(T)
 
 template hasUnsharedIndirections(T)
 {
-    static if (is(T == struct) || is(T == union))
+    static if (is(T == immutable))
+        enum hasUnsharedIndirections = false;
+    else static if (is(T == struct) || is(T == union))
         enum hasUnsharedIndirections = anySatisfy!(.hasUnsharedIndirections, Fields!T);
     else static if (is(T : E[N], E, size_t N))
         enum hasUnsharedIndirections = is(E == void) ? false : hasUnsharedIndirections!E;
     else static if (isFunctionPointer!T)
         enum hasUnsharedIndirections = false;
     else static if (isPointer!T)
-        enum hasUnsharedIndirections = !is(T : shared(U)*, U);
+        enum hasUnsharedIndirections = !is(T : shared(U)*, U) && !is(T : immutable(U)*, U);
     else static if (isDynamicArray!T)
-        enum hasUnsharedIndirections = !is(T : shared(V)[], V);
+        enum hasUnsharedIndirections = !is(T : shared(V)[], V) && !is(T : immutable(V)[], V);
     else static if (is(T == class) || is(T == interface))
         enum hasUnsharedIndirections = !is(T : shared(W), W);
     else
         enum hasUnsharedIndirections = isDelegate!T || __traits(isAssociativeArray, T); // TODO: how to handle these?
+}
+
+unittest
+{
+    static struct Foo { shared(int)* val; }
+
+    static assert(!hasUnsharedIndirections!(immutable(char)*));
+    static assert(!hasUnsharedIndirections!(string));
+
+    static assert(!hasUnsharedIndirections!(Foo));
+    static assert( hasUnsharedIndirections!(Foo*));
+    static assert(!hasUnsharedIndirections!(shared(Foo)*));
+    static assert(!hasUnsharedIndirections!(immutable(Foo)*));
 }
 
 enum bool isAggregateType(T) = is(T == struct) || is(T == union) ||
@@ -466,6 +481,26 @@ template Filter(alias pred, TList...)
         else
             alias Filter = AliasSeq!();
     }
+    /* The next case speeds up compilation by reducing
+     * the number of Filter instantiations
+     */
+    else static if (TList.length == 2)
+    {
+        static if (pred!(TList[0]))
+        {
+            static if (pred!(TList[1]))
+                alias Filter = AliasSeq!(TList[0], TList[1]);
+            else
+                alias Filter = AliasSeq!(TList[0]);
+        }
+        else
+        {
+            static if (pred!(TList[1]))
+                alias Filter = AliasSeq!(TList[1]);
+            else
+                alias Filter = AliasSeq!();
+        }
+    }
     else
     {
         alias Filter =
@@ -485,6 +520,37 @@ template staticMap(alias F, T...)
     else static if (T.length == 1)
     {
         alias staticMap = AliasSeq!(F!(T[0]));
+    }
+    /* Cases 2 to 8 improve compile performance by reducing
+     * the number of recursive instantiations of staticMap
+     */
+    else static if (T.length == 2)
+    {
+        alias staticMap = AliasSeq!(F!(T[0]), F!(T[1]));
+    }
+    else static if (T.length == 3)
+    {
+        alias staticMap = AliasSeq!(F!(T[0]), F!(T[1]), F!(T[2]));
+    }
+    else static if (T.length == 4)
+    {
+        alias staticMap = AliasSeq!(F!(T[0]), F!(T[1]), F!(T[2]), F!(T[3]));
+    }
+    else static if (T.length == 5)
+    {
+        alias staticMap = AliasSeq!(F!(T[0]), F!(T[1]), F!(T[2]), F!(T[3]), F!(T[4]));
+    }
+    else static if (T.length == 6)
+    {
+        alias staticMap = AliasSeq!(F!(T[0]), F!(T[1]), F!(T[2]), F!(T[3]), F!(T[4]), F!(T[5]));
+    }
+    else static if (T.length == 7)
+    {
+        alias staticMap = AliasSeq!(F!(T[0]), F!(T[1]), F!(T[2]), F!(T[3]), F!(T[4]), F!(T[5]), F!(T[6]));
+    }
+    else static if (T.length == 8)
+    {
+        alias staticMap = AliasSeq!(F!(T[0]), F!(T[1]), F!(T[2]), F!(T[3]), F!(T[4]), F!(T[5]), F!(T[6]), F!(T[7]));
     }
     else
     {
@@ -742,4 +808,34 @@ unittest
     static assert( isTrue!(T, "f"));
     static assert(!isTrue!(T, "g"));
     static assert(!isTrue!(T, "h"));
+}
+
+template hasUDA(alias symbol, alias attribute)
+{
+    alias attrs = __traits(getAttributes, symbol);
+
+    static foreach (a; attrs)
+    {
+        static if (is(a == attribute))
+        {
+            enum hasUDA = true;
+        }
+    }
+
+    static if (!__traits(compiles, (hasUDA == true)))
+        enum hasUDA = false;
+}
+
+unittest
+{
+    struct SomeUDA{}
+
+    struct Test
+    {
+        int woUDA;
+        @SomeUDA int withUDA;
+    }
+
+    static assert(hasUDA!(Test.withUDA, SomeUDA));
+    static assert(!hasUDA!(Test.woUDA, SomeUDA));
 }
