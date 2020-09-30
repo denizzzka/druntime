@@ -1133,7 +1133,7 @@ version(DruntimeAbstractRt)
 {
     import external.core.memory : getPageSize;
 
-    enum PAGESIZE = getPageSize,
+    enum PAGESIZE = getPageSize;
 }
 else
 enum
