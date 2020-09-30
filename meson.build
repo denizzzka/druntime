@@ -63,6 +63,7 @@ src = [
     'src/rt/unwind.d',
     'src/rt/util/container/common.d',
     'src/rt/util/random.d',
+    'src/rt/util/typeinfo.d',
     'src/rt/sections.d',
     'src/rt/sections_android.d',
     'src/rt/sections_elf_shared.d',
