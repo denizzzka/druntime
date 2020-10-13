@@ -85,7 +85,6 @@ private:
     }
     version (DruntimeAbstractRt)
     {
-        public size_t _tlsSize;
     }
     else version (UseELF)
     {
