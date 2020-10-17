@@ -607,6 +607,7 @@ struct GC
 
     // https://issues.dlang.org/show_bug.cgi?id=13111
     ///
+    version(OnlyLowMemUnittest) {} else
     unittest
     {
         enum size1 = 1 << 11 + 1; // page in large object pool
@@ -1196,6 +1197,13 @@ static if (__traits(getOverloads, core.stdc.errno, "errno").length == 1
     extern(C) pragma(mangle, __traits(identifier, core.stdc.errno.errno))
     private ref int fakePureErrno() @nogc nothrow pure @system;
 }
+else version(DruntimeAbstractRt)
+{
+    static import external.libc.errno;
+
+    extern(C) pragma(mangle, __traits(identifier, external.libc.errno.__error))
+    private ref int fakePureErrno() @nogc nothrow pure @system;
+}
 else
 {
     extern(C) private @nogc nothrow pure @system
@@ -1225,7 +1233,7 @@ extern (C) private @system @nogc nothrow
     ref int fakePureErrnoImpl()
     {
         import core.stdc.errno;
-        return errno();
+        return errno;
     }
 }
 
