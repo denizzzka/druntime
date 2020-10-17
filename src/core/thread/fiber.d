@@ -2005,6 +2005,9 @@ private:
     }
 }
 
+//FIXME: fiber switching is unimplemented
+version(none):
+
 ///
 unittest {
     int counter;
@@ -2099,7 +2102,6 @@ version (CoreUnittest)
         }
     }
 }
-
 
 // Single thread running separate fibers
 unittest
