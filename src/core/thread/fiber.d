@@ -166,11 +166,6 @@ private
     import core.exception : onOutOfMemoryError;
     import core.stdc.stdlib : abort;
 
-    version (DruntimeAbstractRt)
-    {
-        public import external.core.fiber : fiber_entryPoint;
-    }
-    else
     extern (C) void fiber_entryPoint() nothrow /* LDC */ @assumeUsed
     {
         Fiber   obj = Fiber.getThis();
@@ -1234,6 +1229,7 @@ private:
         else
         {
             version (Posix) import core.sys.posix.sys.mman; // mmap, MAP_ANON
+            import core.stdc.stdlib : malloc; // available everywhere
 
             static if ( __traits( compiles, mmap ) )
             {
@@ -1253,13 +1249,9 @@ private:
             {
                 m_pmem = valloc( sz );
             }
-            else static if ( __traits( compiles, malloc ) )
-            {
-                m_pmem = malloc( sz );
-            }
             else
             {
-                m_pmem = null;
+                m_pmem = malloc( sz );
             }
 
             if ( !m_pmem )
@@ -1303,11 +1295,8 @@ private:
     // Free this fiber's stack.
     //
     final void freeStack() nothrow @nogc
-    in
-    {
-        assert( m_pmem && m_ctxt );
-    }
-    do
+    in(m_pmem)
+    in(m_ctxt)
     {
         // NOTE: m_ctxt is guaranteed to be alive because it is held in the
         //       global context list.
@@ -1322,16 +1311,13 @@ private:
         else
         {
             import core.sys.posix.sys.mman; // munmap
+            import core.stdc.stdlib : free;
 
             static if ( __traits( compiles, mmap ) )
             {
                 munmap( m_pmem, m_size );
             }
-            else static if ( __traits( compiles, valloc ) )
-            {
-                free( m_pmem );
-            }
-            else static if ( __traits( compiles, malloc ) )
+            else
             {
                 free( m_pmem );
             }
@@ -1345,11 +1331,6 @@ private:
     // Initialize the allocated stack.
     // Look above the definition of 'class Fiber' for some information about the implementation of this routine
     //
-    version (DruntimeAbstractRt)
-    {
-        public import external.core.fiber : initStack;
-    }
-    else
     final void initStack() nothrow @nogc
     in
     {
@@ -1390,6 +1371,13 @@ private:
             }
         }
 
+        version (DruntimeAbstractRt)
+        {
+            import external.core.fiber : initStack;
+
+            initStack(m_ctxt);
+        }
+        else
         version (AsmX86_Windows)
         {
             version (StackGrowsDown) {} else static assert( false );
