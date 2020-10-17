@@ -1003,6 +1003,7 @@ private extern(D) static void thread_yield() @nogc nothrow
     Thread.yield();
 }
 
+/++ FIXME: threads unimplemented
 ///
 unittest
 {
@@ -1182,6 +1183,7 @@ unittest
     assert(!inCriticalRegion);
     thread_resumeAll();
 }
++/
 
 ///////////////////////////////////////////////////////////////////////////////
 // GC Support Routines
@@ -2861,6 +2863,8 @@ void joinLowLevelThread(ThreadID tid) nothrow @nogc
     }
 }
 
+//FIXME: threads unimplemented
+version(none)
 nothrow @nogc unittest
 {
     struct TaskWithContect
