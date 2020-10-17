@@ -814,7 +814,11 @@ class Fiber
     }
     do
     {
+        import core.memory : GC;
+
+        GC.disable; //FIXME: this is dirty fix or not?
         allocStack( sz, guardPageSize );
+        GC.enable;
         reset( dg );
     }
 
@@ -1287,7 +1291,8 @@ private:
             }
         }
 
-        Thread.add( m_ctxt );
+        import core.thread.threadbase; //FIXME: replace in all module
+        ThreadBase.add( m_ctxt );
     }
 
 
@@ -1302,7 +1307,9 @@ private:
         //       global context list.
         Thread.slock.lock_nothrow();
         scope(exit) Thread.slock.unlock_nothrow();
-        Thread.remove( m_ctxt );
+
+        import core.thread.threadbase; //FIXME: replace in all module
+        ThreadBase.remove( m_ctxt );
 
         version (Windows)
         {
