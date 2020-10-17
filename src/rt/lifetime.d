@@ -2556,9 +2556,12 @@ unittest
         assert(GC.getAttr(p) == BlkAttr.NO_SCAN);
     }
     test(16);
-    //~ test(1024 * 1024); //FIXME: disable for low-memory devices
+
+    version(OnlyLowMemUnittest){} else
+    test(1024 * 1024);
 }
 
+version(OnlyLowMemUnittest){} else
 unittest
 {
     import core.exception;
