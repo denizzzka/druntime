@@ -2605,11 +2605,9 @@ unittest
     }
 }
 
+version(OnlyLowMemUnittest){} else
 unittest
 {
-    import core.memory : GC; //FIXME: remove
-    GC.collect();
-
     // https://issues.dlang.org/show_bug.cgi?id=18300
     string s = "_D1";
     string expected = "int ";

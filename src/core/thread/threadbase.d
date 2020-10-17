@@ -458,7 +458,7 @@ package:
     //
     // Sets a thread-local reference to the current thread object.
     //
-    package static void setThis(ThreadBase t) nothrow @nogc
+    public /*package, FIXME*/ static void setThis(ThreadBase t) nothrow @nogc
     {
         sm_this = t;
     }
