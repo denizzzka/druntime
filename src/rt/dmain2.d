@@ -602,6 +602,8 @@ private extern (C) int _d_run_main2(char[][] args, size_t totalArgsLength, MainF
     tryExec(&runAll);
 
     // Issue 10344: flush stdout and return nonzero on failure
+    //FIXME: disabled, https://github.com/picolibc/picolibc/issues/86
+    version(none)
     if (.fflush(.stdout) != 0)
     {
         .fprintf(.stderr, "Failed to flush stdout: %s\n", .strerror(.errno));
