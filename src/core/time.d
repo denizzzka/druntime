@@ -2221,8 +2221,6 @@ struct MonoTimeImpl(ClockType clockType)
         assert(after >= rvalueOf(after));
     }
 
-    //FIXME: disabled, fails
-    version(none)
     version (CoreUnittest) unittest
     {
         const currTime = MonoTimeImpl.currTime;
