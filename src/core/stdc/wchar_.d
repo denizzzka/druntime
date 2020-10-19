@@ -14,6 +14,12 @@
 
 module core.stdc.wchar_;
 
+version(CRuntime_Abstract)
+{
+    public import external.libc.wchar_;
+}
+else:
+
 private import core.stdc.config;
 private import core.stdc.stdarg; // for va_list
 private import core.stdc.stdio;  // for FILE, not exposed per spec
