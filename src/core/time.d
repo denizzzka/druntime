@@ -667,8 +667,6 @@ public:
                 assert((cast(D)Duration(-7)) % (cast(E)Duration(5)) == Duration(-2));
             }
 
-            //FIXME: disabled, qemu fails here
-            version(none)
             foreach (T; AliasSeq!(TickDuration, const TickDuration, immutable TickDuration))
             {
                 assertApprox((cast(D)Duration(5)) + cast(T)TickDuration.from!"usecs"(7), Duration(70), Duration(80));
@@ -716,8 +714,6 @@ public:
         return Duration(mixin("lhs.hnsecs " ~ op ~ " _hnsecs"));
     }
 
-    //FIXME: disabled, qemu fails here
-    version(none)
     version (CoreUnittest) unittest
     {
         foreach (D; AliasSeq!(Duration, const Duration, immutable Duration))
@@ -825,8 +821,6 @@ public:
             test1!"%="(Duration(-7), (cast(E)Duration(-5)), Duration(-2));
         }
 
-        //FIXME: disabled, qemu fails here
-        version(none)
         foreach (T; AliasSeq!(TickDuration, const TickDuration, immutable TickDuration))
         {
             test2!"+="(Duration(5), cast(T)TickDuration.from!"usecs"(7), Duration(70), Duration(80));
@@ -1121,8 +1115,6 @@ public:
         return TickDuration.from!"hnsecs"(_hnsecs);
     }
 
-    //FIXME: disabled, qemu fails here
-    version(none)
     version (CoreUnittest) unittest
     {
         foreach (D; AliasSeq!(Duration, const Duration, immutable Duration))
@@ -1805,8 +1797,6 @@ unittest
     assert(fabs(td - 1000) < 0.001);
 }
 
-//FIXME: disabled, qemu fails here
-version(none)
 unittest
 {
     void testFun(string U)() {
@@ -2883,11 +2873,10 @@ struct TickDuration
             appOrigin = TickDuration.currSystemTick;
     }
 
-    //FIXME: disabled, ticks isn't count for now
-    //~ version (CoreUnittest) unittest
-    //~ {
-        //~ assert(ticksPerSec);
-    //~ }
+    version (CoreUnittest) unittest
+    {
+        assert(ticksPerSec);
+    }
 
 
     /++
@@ -2907,8 +2896,6 @@ struct TickDuration
         return this.to!("seconds", long)();
     }
 
-    //FIXME: disabled, fails
-    version(none)
     version (CoreUnittest) unittest
     {
         foreach (T; AliasSeq!(TickDuration, const TickDuration, immutable TickDuration))
@@ -2980,8 +2967,6 @@ struct TickDuration
         return TickDuration(cast(long)(length * (ticksPerSec / cast(real)unitsPerSec)));
     }
 
-    //FIXME: disabled, fails
-    version(none)
     version (CoreUnittest) unittest
     {
         foreach (units; AliasSeq!("seconds", "msecs", "usecs", "nsecs"))
@@ -3012,8 +2997,6 @@ struct TickDuration
         return Duration(hnsecs);
     }
 
-    //FIXME: disabled, fails
-    version(none)
     version (CoreUnittest) unittest
     {
         foreach (D; AliasSeq!(Duration, const Duration, immutable Duration))
@@ -3064,8 +3047,6 @@ struct TickDuration
         return this;
     }
 
-    //FIXME: disabled, fails
-    version(none)
     version (CoreUnittest) unittest
     {
         foreach (T; AliasSeq!(TickDuration, const TickDuration, immutable TickDuration))
