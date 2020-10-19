@@ -1317,7 +1317,7 @@ private:
         }
         else
         {
-            import core.sys.posix.sys.mman; // munmap
+            version (Posix) import core.sys.posix.sys.mman; // munmap
             import core.stdc.stdlib : free;
 
             static if ( __traits( compiles, mmap ) )
