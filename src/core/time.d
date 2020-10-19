@@ -3090,15 +3090,13 @@ struct TickDuration
         return TickDuration(mixin("length " ~ op ~ " rhs.length"));
     }
 
-    //FIXME: disabled, fails
-    version(none)
     version (CoreUnittest) unittest
     {
         foreach (T; AliasSeq!(TickDuration, const TickDuration, immutable TickDuration))
         {
             T a = TickDuration.currSystemTick;
             T b = TickDuration.currSystemTick;
-            assert((a + b).seconds > 0);
+            assert((a + b).usecs > 0);
             assert((a - b).seconds <= 0);
         }
     }
