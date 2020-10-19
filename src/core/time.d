@@ -1793,8 +1793,6 @@ T to(string units, T, D)(D td) @safe pure nothrow @nogc
 }
 
 ///
-//FIXME: disabled, qemu fails here
-version(none)
 unittest
 {
     auto t = TickDuration.from!"seconds"(1000);
@@ -2840,6 +2838,13 @@ struct TickDuration
 
     @trusted shared static this()
     {
+        version (DruntimeAbstractRt)
+        {
+            import external.core.time : tickDuration_ticksPerSec;
+
+            ticksPerSec = tickDuration_ticksPerSec;
+        }
+        else
         version (Windows)
         {
             if (QueryPerformanceFrequency(cast(long*)&ticksPerSec) == 0)
@@ -2871,6 +2876,8 @@ struct TickDuration
             else
                 ticksPerSec = 1_000_000;
         }
+        else
+            static assert(false);
 
         if (ticksPerSec != 0)
             appOrigin = TickDuration.currSystemTick;
