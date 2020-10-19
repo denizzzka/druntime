@@ -2651,6 +2651,7 @@ unittest
 }
 
 //FIXME: log10(1_000_000) returns negative value on ARM
+//More: https://github.com/picolibc/picolibc/issues/87
 version(ARM){} else
 unittest
 {
