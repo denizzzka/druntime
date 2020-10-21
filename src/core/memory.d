@@ -1197,7 +1197,7 @@ static if (__traits(getOverloads, core.stdc.errno, "errno").length == 1
     extern(C) pragma(mangle, __traits(identifier, core.stdc.errno.errno))
     private ref int fakePureErrno() @nogc nothrow pure @system;
 }
-else version(DruntimeAbstractRt)
+else version(CRuntime_Abstract)
 {
     static import external.libc.errno;
 
