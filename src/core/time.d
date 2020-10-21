@@ -2650,9 +2650,6 @@ unittest
     auto nsecs = convClockFreq(1982, MonoTime.ticksPerSecond, 1_000_000_000);
 }
 
-//FIXME: log10(1_000_000) returns negative value on ARM
-//More: https://github.com/picolibc/picolibc/issues/87
-version(ARM){} else
 unittest
 {
     assert(convClockFreq(99, 43, 57) == 131);
