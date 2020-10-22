@@ -814,11 +814,7 @@ class Fiber
     }
     do
     {
-        import core.memory : GC;
-
-        GC.disable; //FIXME: this is dirty fix or not?
         allocStack( sz, guardPageSize );
-        GC.enable;
         reset( dg );
     }
 
