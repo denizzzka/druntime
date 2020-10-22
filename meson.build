@@ -25,6 +25,7 @@ src = [
     'src/core/sync/exception.d',
     'src/core/sync/semaphore.d',
     'src/core/time.d',
+    'src/core/threadasm.S',
     'src/core/thread/fiber.d',
     'src/core/thread/osthread.d',
     'src/core/thread/threadbase.d',
