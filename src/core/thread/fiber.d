@@ -1178,7 +1178,11 @@ private:
         //       room for this struct explicitly would be to mash it into the
         //       base of the stack being allocated below.  However, doing so
         //       requires too much special logic to be worthwhile.
+
+        import core.memory : GC;
+        GC.disable(); // to avoid freeing m_pmem if GC collection will be invoked
         m_ctxt = new StackContext;
+        GC.enable();
 
         version (Windows)
         {
