@@ -1346,20 +1346,23 @@ private:
     }
     do
     {
-        void* pstack = m_ctxt.tstack;
-        scope( exit )  m_ctxt.tstack = pstack;
-
-        void push( size_t val ) nothrow
+        version (DruntimeAbstractRt) {} else
         {
-            version (StackGrowsDown)
+            void* pstack = m_ctxt.tstack;
+            scope( exit )  m_ctxt.tstack = pstack;
+
+            void push( size_t val ) nothrow
             {
-                pstack -= size_t.sizeof;
-                *(cast(size_t*) pstack) = val;
-            }
-            else
-            {
-                pstack += size_t.sizeof;
-                *(cast(size_t*) pstack) = val;
+                version (StackGrowsDown)
+                {
+                    pstack -= size_t.sizeof;
+                    *(cast(size_t*) pstack) = val;
+                }
+                else
+                {
+                    pstack += size_t.sizeof;
+                    *(cast(size_t*) pstack) = val;
+                }
             }
         }
 
@@ -1382,7 +1385,10 @@ private:
         {
             import external.core.fiber : initStack;
 
-            initStack(m_ctxt);
+            version(StackGrowsDown)
+                initStack!true(m_ctxt);
+            else
+                initStack!false(m_ctxt);
         }
         else
         version (AsmX86_Windows)
@@ -2004,9 +2010,6 @@ private:
         size_t __from_stack_size;
     }
 }
-
-//FIXME: fiber switching is unimplemented
-version(none):
 
 ///
 unittest {
