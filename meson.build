@@ -75,6 +75,7 @@ src = [
 ]
 
 ldc_specific = [
+    'src/ldc/sanitizers_optionally_linked.d',
     'src/rt/sections_ldc.d',
 ]
 

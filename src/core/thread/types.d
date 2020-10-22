@@ -74,9 +74,14 @@ shared static this()
     }
     else version (DruntimeAbstractRt)
     {
+        static import external.core.types;
+
+        PAGESIZE = external.core.types.PAGESIZE;
     }
     else
     {
         static assert(0, "unimplemented");
     }
+
+    assert(PAGESIZE);
 }
