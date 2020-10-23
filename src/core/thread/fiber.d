@@ -2114,7 +2114,7 @@ unittest
 
 
 // Multiple threads running separate fibers
-version(none) //FIXME: disabled because threads isn't supported yet
+version(ThreadsDisabled) {} else
 unittest
 {
     auto group = new ThreadGroup();
@@ -2133,7 +2133,7 @@ unittest
 // optimization levels.
 //
 // https://github.com/ldc-developers/ldc/issues/666
-version(none) //FIXME: disabled because threads isn't supported yet
+version(ThreadsDisabled) {} else
 unittest
 {
     static int tls;
@@ -2213,7 +2213,7 @@ unittest
 }
 
 // Multiple threads running shared fibers
-version(none) //FIXME: disabled because threads isn't supported yet
+version(ThreadsDisabled) {} else
 unittest
 {
     shared bool[10] locks;
@@ -2412,6 +2412,7 @@ unittest
 }
 
 // stress testing GC stack scanning
+version(ThreadsDisabled) {} else
 unittest
 {
     import core.memory;
