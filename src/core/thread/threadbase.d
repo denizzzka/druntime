@@ -447,7 +447,7 @@ package:
     string              m_name;
     size_t              m_sz;
     bool                m_isDaemon;
-    bool                m_isInCriticalRegion;
+    public /*FIXME: remove public*/ bool                m_isInCriticalRegion;
     Throwable           m_unhandled;
 
     ///////////////////////////////////////////////////////////////////////////
@@ -631,7 +631,6 @@ package(core.thread):
     in
     {
         assert(c);
-        assert(c.next || c.prev);
     }
     do
     {
