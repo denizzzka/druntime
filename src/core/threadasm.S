@@ -595,7 +595,7 @@ CSYM(fiber_switchContext):
       sub sp, r1, #72
       vpop {d8-d15}
     #else
-        #ifdef __ARM_EABI__
+        #ifdef __thumb__
             sub r1, #8
             mov sp, r1
         #else
