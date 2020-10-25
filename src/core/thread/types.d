@@ -74,9 +74,9 @@ shared static this()
     }
     else version (DruntimeAbstractRt)
     {
-        static import external.core.types;
+        import external.core.memory : PageSize;
 
-        PAGESIZE = external.core.types.PAGESIZE;
+        PAGESIZE = PageSize;
     }
     else
     {

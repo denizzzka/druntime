@@ -1131,9 +1131,9 @@ class ConservativeGC : GC
 
 version(DruntimeAbstractRt)
 {
-    import external.core.memory : getPageSize;
+    import external.core.memory : PageSize;
 
-    enum PAGESIZE = getPageSize;
+    enum PAGESIZE = PageSize;
 }
 else
 enum
