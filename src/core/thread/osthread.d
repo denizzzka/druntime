@@ -1003,8 +1003,9 @@ private extern(D) static void thread_yield() @nogc nothrow
     Thread.yield();
 }
 
-/++ FIXME: threads unimplemented
 ///
+version(ThreadsDisabled) {} else
+{
 unittest
 {
     class DerivedThread : Thread
@@ -1183,7 +1184,7 @@ unittest
     assert(!inCriticalRegion);
     thread_resumeAll();
 }
-+/
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // GC Support Routines
@@ -2863,8 +2864,7 @@ void joinLowLevelThread(ThreadID tid) nothrow @nogc
     }
 }
 
-//FIXME: threads unimplemented
-version(none)
+version(ThreadsDisabled){} else
 nothrow @nogc unittest
 {
     struct TaskWithContect
