@@ -446,7 +446,7 @@ package:
     Callable            m_call;
     string              m_name;
     size_t              m_sz;
-    bool                m_isDaemon;
+    public /*FIXME: remove public*/ bool                m_isDaemon;
     public /*FIXME: remove public*/ bool                m_isInCriticalRegion;
     Throwable           m_unhandled;
 
@@ -465,7 +465,7 @@ package:
 
 package(core.thread):
 
-    StackContext        m_main;
+    public /*FIXME: remove public*/ StackContext        m_main;
     public /*FIXME: remove public*/ StackContext*       m_curr;
     public /*FIXME: remove public*/ bool                m_lock;
     private void*       m_tlsgcdata;
@@ -602,7 +602,7 @@ package(core.thread):
     //
     // Add a context to the global context list.
     //
-    static void add(StackContext* c) nothrow @nogc
+    public static void add(StackContext* c) nothrow @nogc
     in
     {
         assert(c);
@@ -770,7 +770,8 @@ public /* FIXME: package */ void thread_term_tpl(ThreadT, MainThreadStore)(ref M
         (cast(ubyte[])_mainThreadStore)[] = 0;
     ThreadBase.sm_main = null;
 
-    assert(ThreadBase.sm_tbeg && ThreadBase.sm_tlen == 1);
+    assert(ThreadBase.sm_tbeg);
+    assert(ThreadBase.sm_tlen == 1);
     assert(!ThreadBase.nAboutToStart);
     if (ThreadBase.pAboutToStart) // in case realloc(p, 0) doesn't return null
     {
