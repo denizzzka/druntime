@@ -1180,7 +1180,8 @@ private:
         //       requires too much special logic to be worthwhile.
 
         import core.memory : GC;
-        GC.disable(); // to avoid freeing m_pmem if GC collection will be invoked
+        //FIXME: probably, this is an error of garbage collecting:
+        GC.disable(); // to avoid call freeStack() if GC collection will be invoked
         m_ctxt = new StackContext;
         GC.enable();
 
