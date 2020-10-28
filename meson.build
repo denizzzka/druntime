@@ -66,6 +66,7 @@ src = [
     'src/rt/tlsgc.d',
     'src/rt/unwind.d',
     'src/rt/util/container/common.d',
+    'src/rt/util/container/treap.d',
     'src/rt/util/random.d',
     'src/rt/util/typeinfo.d',
     'src/rt/sections.d',
