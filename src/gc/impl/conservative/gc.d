@@ -3991,6 +3991,7 @@ unittest // bugzilla 15822
     GC.collect();
 }
 
+version(OnlyLowMemUnittest){} else
 unittest // bugzilla 1180
 {
     import core.exception;
