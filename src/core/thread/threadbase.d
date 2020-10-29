@@ -132,7 +132,7 @@ class ThreadBase
         m_tlsgcdata = rt_tlsgc_init();
     }
 
-    package void initDataStorage() nothrow
+    public /*FIXME: package*/ void initDataStorage() nothrow
     {
         assert(m_curr is &m_main);
 
