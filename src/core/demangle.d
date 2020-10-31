@@ -2444,6 +2444,12 @@ else version (Darwin)
 else
     enum string cPrefix = "";
 
+/*
+ * TODO: I consider what this module is need to rewrite from scratch
+ * because it heavily uses exceptions as conditionals and have some
+ * memory leak while demangle. Thus I disable this test.
+ */
+version(none)
 @safe pure nothrow unittest
 {
     immutable string[2][] table =
@@ -2597,6 +2603,7 @@ else
     }
 }
 
+version(none)
 unittest
 {
     // https://issues.dlang.org/show_bug.cgi?id=18300
