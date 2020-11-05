@@ -321,6 +321,7 @@ private alias extern(C) int function(char[][] args) MainFunc;
  * runs embedded unittests and then runs the given D main() function,
  * optionally catching and printing any unhandled exceptions.
  */
+version (DruntimeAbstractRt) {} else
 extern (C) int _d_run_main(int argc, char** argv, MainFunc mainFunc)
 {
     // Set up _cArgs and array of D char[] slices, then forward to _d_run_main2
@@ -380,15 +381,6 @@ extern (C) int _d_run_main(int argc, char** argv, MainFunc mainFunc)
             arg = argv[i][0 .. strlen(argv[i])];
             totalArgsLength += arg.length;
         }
-    }
-    else version (DruntimeAbstractRt)
-    {
-        import external.rt.dmain : createCLIargs;
-
-        size_t totalArgsLength;
-        char[][] args;
-
-        createCLIargs(argc, argv, args, totalArgsLength);
     }
     else
         static assert(0);
