@@ -117,7 +117,7 @@ class ThreadBase
     /**
      * Cleans up any remaining resources used by this object.
      */
-    package bool destructBeforeDtor() nothrow @nogc
+    public /*FIXME: package*/ bool destructBeforeDtor() nothrow @nogc
     {
         destroyDataStorageIfAvail();
 
@@ -141,7 +141,7 @@ class ThreadBase
         tlsGCdataInit();
     }
 
-    package void destroyDataStorage() nothrow @nogc
+    public /*FIXME: package*/ void destroyDataStorage() nothrow @nogc
     {
         rt_tlsgc_destroy(m_tlsgcdata);
         m_tlsgcdata = null;
@@ -443,9 +443,9 @@ package:
     // Standard thread data
     //
     public /*FIXME: remove public*/ ThreadID            m_addr;
-    Callable            m_call;
+    protected                       Callable            m_call;
     string              m_name;
-    size_t              m_sz;
+    protected size_t    m_sz;
     public /*FIXME: remove public*/ bool                m_isDaemon;
     public /*FIXME: remove public*/ bool                m_isInCriticalRegion;
     Throwable           m_unhandled;
