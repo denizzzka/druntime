@@ -365,8 +365,7 @@ protected:
 // Unit Tests
 ////////////////////////////////////////////////////////////////////////////////
 
-//FIXME: threads creation isn't implemented
-version(none)
+version(ThreadsDisabled) {} else
 unittest
 {
     import core.thread, core.atomic;
