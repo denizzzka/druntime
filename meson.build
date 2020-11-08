@@ -21,6 +21,7 @@ src = [
     'src/core/internal/util/array.d',
     'src/core/runtime.d',
     'src/core/memory.d',
+    'src/core/sync/condition.d',
     'src/core/sync/event.d',
     'src/core/sync/exception.d',
     'src/core/sync/semaphore.d',

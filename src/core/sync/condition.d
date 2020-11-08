@@ -37,6 +37,9 @@ else version (Posix)
     private import core.sys.posix.pthread;
     private import core.sys.posix.time;
 }
+version (DruntimeAbstractRt)
+{
+}
 else
 {
     static assert(false, "Platform not supported");
@@ -58,6 +61,11 @@ else
  * indicate that control is not transferred to the waiter when a notification
  * is sent.
  */
+version (DruntimeAbstractRt)
+{
+    public import external.core.condition : Condition;
+}
+else
 class Condition
 {
     ////////////////////////////////////////////////////////////////////////////
