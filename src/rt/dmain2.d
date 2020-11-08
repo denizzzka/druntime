@@ -321,7 +321,7 @@ private alias extern(C) int function(char[][] args) MainFunc;
  * runs embedded unittests and then runs the given D main() function,
  * optionally catching and printing any unhandled exceptions.
  */
-version (DruntimeAbstractRt) {} else
+//~ version (DruntimeAbstractRt) {} else
 extern (C) int _d_run_main(int argc, char** argv, MainFunc mainFunc)
 {
     // Set up _cArgs and array of D char[] slices, then forward to _d_run_main2
@@ -370,7 +370,7 @@ extern (C) int _d_run_main(int argc, char** argv, MainFunc mainFunc)
         wargs = null;
         wargc = 0;
     }
-    else version (Posix)
+    else //version (Posix)
     {
         // Allocate args[] on the stack
         char[][] args = (cast(char[]*) alloca(argc * (char[]).sizeof))[0 .. argc];
@@ -382,8 +382,8 @@ extern (C) int _d_run_main(int argc, char** argv, MainFunc mainFunc)
             totalArgsLength += arg.length;
         }
     }
-    else
-        static assert(0);
+    //~ else
+        //~ static assert(0);
 
     return _d_run_main2(args, totalArgsLength, mainFunc);
 }

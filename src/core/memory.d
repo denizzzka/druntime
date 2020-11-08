@@ -1051,7 +1051,7 @@ struct GC
             assert(Resource.outcome == Outcome.notCalled);
         }
 
-        auto r = new Resource;
+        r = new Resource;
         assert(Resource.outcome == Outcome.notCalled);
         r.destroy;
         assert(Resource.outcome == Outcome.calledManually);
