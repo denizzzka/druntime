@@ -302,9 +302,6 @@ private:
     }
 }
 
-//FIXME: events ins't implemented properly
-version(none):
-
 // Test single-thread (non-shared) use.
 @nogc nothrow unittest
 {
@@ -323,6 +320,7 @@ version(none):
     assert(!ev2.wait(1.dur!"msecs"));
 }
 
+version (ThreadsDisabled) {} else
 unittest
 {
     import core.thread, core.atomic;
