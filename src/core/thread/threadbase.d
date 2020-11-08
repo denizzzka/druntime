@@ -420,7 +420,7 @@ class ThreadBase
     // Thread entry point.  Invokes the function or delegate passed on
     // construction (if any).
     //
-    package final void run()
+    protected /* package final  */ void run()
     {
         m_call();
     }
@@ -448,7 +448,7 @@ package:
     protected size_t    m_sz;
     public /*FIXME: remove public*/ bool                m_isDaemon;
     public /*FIXME: remove public*/ bool                m_isInCriticalRegion;
-    Throwable           m_unhandled;
+    public /*FIXME: remove public*/ Throwable           m_unhandled;
 
     ///////////////////////////////////////////////////////////////////////////
     // Storage of Active Thread
