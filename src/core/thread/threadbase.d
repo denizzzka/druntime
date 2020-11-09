@@ -627,7 +627,7 @@ package(core.thread):
     //
     // This assumes slock being acquired. This isn't done here to
     // avoid double locking when called from remove(Thread)
-    static void remove(StackContext* c) nothrow @nogc
+    public static void remove(StackContext* c) nothrow @nogc
     in
     {
         assert(c);
