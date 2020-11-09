@@ -584,8 +584,8 @@ package(core.thread):
     __gshared size_t        sm_tlen;
 
     // can't use core.internal.util.array in public code
-    __gshared ThreadBase* pAboutToStart;
-    __gshared size_t      nAboutToStart;
+    protected __gshared ThreadBase* pAboutToStart;
+    protected __gshared size_t      nAboutToStart;
 
     //
     // Used for ordering threads in the global thread list.
