@@ -368,6 +368,11 @@ void[] initTLSRanges() nothrow @nogc
 else
     static assert(0, "TLS range detection not implemented for this OS.");
 
+version (DruntimeAbstractRt)
+{
+    public import external.rt.sections : finiTLSRanges;
+}
+else
 void finiTLSRanges(void[] rng) nothrow @nogc
 {
     debug(PRINTF) printf("finiTLSRanges called\n");
