@@ -132,7 +132,7 @@ class ThreadBase
         m_tlsgcdata = rt_tlsgc_init();
     }
 
-    public /*FIXME: package*/ void initDataStorage() nothrow
+    package void initDataStorage() nothrow
     {
         assert(m_curr is &m_main);
 
@@ -444,7 +444,7 @@ package:
     //
     public /*FIXME: remove public*/ ThreadID            m_addr;
     protected                       Callable            m_call;
-    string              m_name;
+    protected                       string              m_name;
     protected size_t    m_sz;
     public /*FIXME: remove public*/ bool                m_isDaemon;
     public /*FIXME: remove public*/ bool                m_isInCriticalRegion;
