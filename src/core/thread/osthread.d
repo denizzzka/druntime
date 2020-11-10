@@ -1070,7 +1070,7 @@ unittest
 unittest
 {
     // use >PAGESIZE to avoid stack overflow (e.g. in an syscall)
-    auto thr = new Thread(function{}, 4096 + 1).start();
+    auto thr = new Thread(function{}, 4096 + 8 /* stack size aligned for most platforms */).start();
     thr.join();
 }
 
