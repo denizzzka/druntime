@@ -309,13 +309,13 @@ private:
     Event ev1 = Event(false, false);
     assert(!ev1.wait(1.dur!"msecs"));
     ev1.set();
-    assert(ev1.wait());
+    assert(ev1.wait(1.dur!"msecs"));
     assert(!ev1.wait(1.dur!"msecs"));
 
     // manual-reset, initial state true
     Event ev2 = Event(true, true);
-    assert(ev2.wait());
-    assert(ev2.wait());
+    assert(ev2.wait(1.dur!"msecs"));
+    assert(ev2.wait(1.dur!"msecs"));
     ev2.reset();
     assert(!ev2.wait(1.dur!"msecs"));
 }
