@@ -2034,6 +2034,7 @@ extern (C) void thread_suspendAll() nothrow
  * Throws:
  *  ThreadError if the resume fails for a running thread.
  */
+version(DruntimeAbstractRt) {} else
 private extern (D) void resume(ThreadBase _t) nothrow
 {
     Thread t = _t.toThread;
@@ -2089,6 +2090,8 @@ private extern (D) void resume(ThreadBase _t) nothrow
             t.m_curr.tstack = t.m_curr.bstack;
         }
     }
+    else
+        static assert(false);
 }
 
 
