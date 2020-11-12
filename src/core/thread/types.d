@@ -27,6 +27,9 @@ version (Posix)
 else version (DruntimeAbstractRt)
     public import external.core.types : ThreadID;
 
+version (DruntimeAbstractRt)
+    public import external.core.thread : ll_ThreadData;
+else
 struct ll_ThreadData
 {
     ThreadID tid;
