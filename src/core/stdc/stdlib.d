@@ -235,3 +235,7 @@ version (CRuntime_Microsoft)
     ///
     long  _wcstoi64(scope inout(wchar)*, scope inout(wchar)**,int);
 }
+else version (CRuntime_Abstract)
+{
+    public import external.libc.stdlib;
+}
