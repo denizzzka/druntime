@@ -2792,8 +2792,7 @@ struct Gcx
 
         busyThreads.atomicOp!"+="(1); // main thread is busy
 
-        //FIXME: uninitialized evStart call
-        //evStart.set();
+        evStart.setIfInitialized();
 
         debug(PARALLEL_PRINTF) printf("mark %lld roots\n", cast(ulong)(ptop - pbot));
 
