@@ -2826,9 +2826,9 @@ struct TickDuration
     {
         version (DruntimeAbstractRt)
         {
-            import external.core.time : tickDuration_ticksPerSec;
+            import external.core.time : _ticksPerSec;
 
-            ticksPerSec = tickDuration_ticksPerSec;
+            ticksPerSec = _ticksPerSec;
         }
         else
         version (Windows)
