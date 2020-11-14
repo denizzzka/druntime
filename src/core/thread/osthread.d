@@ -2839,6 +2839,9 @@ ThreadID createLowLevelThread(void delegate() nothrow dg, uint stacksize = 0,
  * Params:
  *  tid = the thread ID returned by `createLowLevelThread`.
  */
+version (DruntimeAbstractRt)
+    public import external.core.thread : joinLowLevelThread;
+else
 void joinLowLevelThread(ThreadID tid) nothrow @nogc
 {
     version (Windows)
