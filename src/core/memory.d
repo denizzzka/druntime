@@ -1041,17 +1041,19 @@ struct GC
             Resource.outcome == Outcome.notCalled ||
             Resource.outcome == Outcome.calledFromDruntime);
 
+        auto r = new Resource;
+        GC.runFinalizers((cast(const void*)typeid(Resource).destructor)[0..1]);
+        assert(Resource.outcome == Outcome.calledFromDruntime);
+        Resource.outcome = Outcome.notCalled;
+
         debug(MEMSTOMP) {} else
         {
-            auto r = new Resource;
-            GC.runFinalizers((cast(const void*)typeid(Resource).destructor)[0..1]);
-            assert(Resource.outcome == Outcome.calledFromDruntime);
-            Resource.outcome = Outcome.notCalled;
-            r.destroy; // assumes Resource data is still available
+            // assume Resource data is still available
+            r.destroy;
             assert(Resource.outcome == Outcome.notCalled);
         }
 
-        auto r = new Resource;
+        r = new Resource;
         assert(Resource.outcome == Outcome.notCalled);
         r.destroy;
         assert(Resource.outcome == Outcome.calledManually);
