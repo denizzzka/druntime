@@ -23,7 +23,11 @@
  *    (See accompanying file LICENSE or copy at
  *          http://www.boost.org/LICENSE_1_0.txt)
  */
+
 module gc.impl.manual.gc;
+
+//FIXME: need way to enable/disable compiling GC engines
+version(none):
 
 import core.gc.gcinterface;
 
