@@ -12,7 +12,16 @@ import core.internal.parseoptions;
 
 __gshared Config config;
 
-struct Config
+version(DruntimeAbstractRt)
+{
+    static import external.core.gc;
+
+    alias Config = external.core.gc.Config;
+}
+else
+    alias Config = DefaultConfigStruct;
+
+struct DefaultConfigStruct
 {
     bool disable;            // start disabled
     ubyte profile;           // enable profiling with summary when terminating program
