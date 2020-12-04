@@ -37,7 +37,7 @@ else version (Posix)
     private import core.sys.posix.pthread;
     private import core.sys.posix.time;
 }
-version (DruntimeAbstractRt)
+else version (DruntimeAbstractRt)
 {
 }
 else
