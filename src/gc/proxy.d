@@ -55,8 +55,10 @@ extern (C)
         // do not call, they register implicitly through pragma(crt_constructor)
         // avoid being optimized away
         auto reg1 = &_d_register_conservative_gc;
-        auto reg2 = &_d_register_manual_gc;
-        return reg1 < reg2 ? reg1 : reg2;
+        //FIXME:
+        //~ auto reg2 = &_d_register_manual_gc;
+        //~ return reg1 < reg2 ? reg1 : reg2;
+        return reg1;
     }
 
     void gc_init()
