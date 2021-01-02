@@ -27,7 +27,6 @@
 module gc.impl.manual.gc;
 
 //FIXME: need way to enable/disable compiling GC engines
-version(none):
 
 import core.gc.gcinterface;
 
