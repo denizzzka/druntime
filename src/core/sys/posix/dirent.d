@@ -15,7 +15,7 @@
  */
 module core.sys.posix.dirent;
 
-private import core.sys.posix.config;
+import core.sys.posix.config;
 public import core.sys.posix.sys.types; // for ino_t
 
 version (OSX)
@@ -141,6 +141,8 @@ else version (Darwin)
 }
 else version (FreeBSD)
 {
+    import core.sys.freebsd.config;
+
     // https://github.com/freebsd/freebsd/blob/master/sys/sys/dirent.h
     enum
     {
@@ -155,19 +157,46 @@ else version (FreeBSD)
         DT_WHT      = 14
     }
 
-    align(4)
-    struct dirent
+    static if (__FreeBSD_version >= 1200000)
     {
-        uint      d_fileno;
-        ushort    d_reclen;
-        ubyte     d_type;
-        ubyte     d_namlen;
-        char[256] d_name = 0;
+        struct dirent
+        {
+            ino_t     d_fileno;
+            off_t     d_off;
+            ushort    d_reclen;
+            ubyte     d_type;
+            ubyte     d_pad0;
+            ushort    d_namlen;
+            ushort    d_pad1;
+            char[256] d_name = 0;
+        }
+    }
+    else
+    {
+        align(4)
+        struct dirent
+        {
+            uint      d_fileno;
+            ushort    d_reclen;
+            ubyte     d_type;
+            ubyte     d_namlen;
+            char[256] d_name = 0;
+        }
     }
 
     alias void* DIR;
 
-    pragma(mangle, "readdir@FBSD_1.0") dirent* readdir(DIR*);
+    version (GNU)
+    {
+        dirent* readdir(DIR*);
+    }
+    else
+    {
+        static if (__FreeBSD_version >= 1200000)
+            pragma(mangle, "readdir@FBSD_1.5") dirent* readdir(DIR*);
+        else
+            pragma(mangle, "readdir@FBSD_1.0") dirent* readdir(DIR*);
+    }
 }
 else version (NetBSD)
 {
@@ -485,7 +514,17 @@ else version (Darwin)
 }
 else version (FreeBSD)
 {
-    pragma(mangle, "readdir_r@FBSD_1.0") int readdir_r(DIR*, dirent*, dirent**);
+    version (GNU)
+    {
+        int readdir_r(DIR*, dirent*, dirent**);
+    }
+    else
+    {
+        static if (__FreeBSD_version >= 1200000)
+            pragma(mangle, "readdir_r@FBSD_1.5") int readdir_r(DIR*, dirent*, dirent**);
+        else
+            pragma(mangle, "readdir_r@FBSD_1.0") int readdir_r(DIR*, dirent*, dirent**);
+    }
 }
 else version (DragonFlyBSD)
 {
@@ -552,8 +591,16 @@ version (CRuntime_Glibc)
 }
 else version (FreeBSD)
 {
-    pragma(mangle, "seekdir@@FBSD_1.0") void seekdir(DIR*, c_long);
-    pragma(mangle, "telldir@@FBSD_1.0") c_long telldir(DIR*);
+    version (GNU)
+    {
+        void seekdir(DIR*, c_long);
+        c_long telldir(DIR*);
+    }
+    else
+    {
+        pragma(mangle, "seekdir@@FBSD_1.0") void seekdir(DIR*, c_long);
+        pragma(mangle, "telldir@@FBSD_1.0") c_long telldir(DIR*);
+    }
 }
 else version (NetBSD)
 {

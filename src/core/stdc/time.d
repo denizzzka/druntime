@@ -24,7 +24,7 @@ else version(CRuntime_Abstract)
 else
     static assert(0, "unsupported system");
 
-private import core.stdc.config;
+import core.stdc.config;
 
 extern (C):
 @trusted: // There are only a few functions here that use unsafe C strings.
