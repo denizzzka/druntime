@@ -10,7 +10,7 @@
 
 module core.runtime;
 
-private import core.internal.execinfo;
+import core.internal.execinfo;
 
 version (OSX)
     version = Darwin;
@@ -105,7 +105,7 @@ private
 }
 
 
-static this()
+shared static this()
 {
     // NOTE: Some module ctors will run before this handler is set, so it's
     //       still possible the app could exit without a stack trace.  If
@@ -888,12 +888,7 @@ static if (hasExecinfo) private class DefaultTraceInfo : Throwable.TraceInfo
 
         static if (enableDwarf)
         {
-            import core.internal.traits : externDFunc;
-
-            alias traceHandlerOpApplyImpl = externDFunc!(
-                "rt.backtrace.dwarf.traceHandlerOpApplyImpl",
-                int function(const(void*)[], scope int delegate(ref size_t, ref const(char[])))
-                );
+            import core.internal.backtrace.dwarf;
 
             if (numframes >= FIRSTFRAME)
             {

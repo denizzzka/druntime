@@ -20,9 +20,9 @@ version(CRuntime_Abstract)
 }
 else:
 
-private import core.stdc.config;
-private import core.stdc.stdarg; // for va_list
-private import core.stdc.stdio;  // for FILE, not exposed per spec
+import core.stdc.config;
+import core.stdc.stdarg; // for va_list
+import core.stdc.stdio;  // for FILE, not exposed per spec
 public import core.stdc.stddef;  // for wchar_t
 public import core.stdc.time;    // for tm
 public import core.stdc.stdint;  // for WCHAR_MIN, WCHAR_MAX

@@ -38,7 +38,7 @@
  * See `runStateMachine` and `readLineNumberProgram` for more details.
  *
  * DWARF_Version:
- * This module only supports DWARF 3 and 4.
+ * This module only supports DWARF 3, 4 and 5.
  *
  * Reference: http://www.dwarfstd.org/
  * Copyright: Copyright Digital Mars 2015 - 2015.
@@ -47,9 +47,10 @@
  * Source: $(DRUNTIMESRC rt/backtrace/dwarf.d)
  */
 
-module rt.backtrace.dwarf;
+module core.internal.backtrace.dwarf;
 
 import core.internal.execinfo;
+import core.internal.string;
 
 static if (hasExecinfo):
 
@@ -63,11 +64,11 @@ else version (WatchOS)
     version = Darwin;
 
 version (Darwin)
-    import rt.backtrace.macho;
+    import core.internal.backtrace.macho;
 else
-    import rt.backtrace.elf;
+    import core.internal.backtrace.elf;
 
-import rt.util.container.array;
+import core.internal.container.array;
 import core.stdc.string : strlen, memcpy;
 
 //debug = DwarfDebugMachine;
@@ -75,10 +76,87 @@ debug(DwarfDebugMachine) import core.stdc.stdio : printf;
 
 struct Location
 {
-    const(char)[] file = null;
-    const(char)[] directory = null;
-    int line = -1;
+    /**
+     * Address of the instruction for which this location is for.
+     */
     const(void)* address;
+
+    /**
+     * The name of the procedure, or function, this address is in.
+     */
+    const(char)[] procedure;
+
+    /**
+     * Path to the file this location references, relative to `directory`
+     *
+     * Note that depending on implementation, this could be just a name,
+     * a relative path, or an absolute path.
+     *
+     * If no debug info is present, this may be `null`.
+     */
+    const(char)[] file;
+
+    /**
+     * Directory where `file` resides
+     *
+     * This may be `null`, either if there is no debug info,
+     * or if the compiler implementation doesn't use this feature (e.g. DMD).
+     */
+    const(char)[] directory;
+
+    /**
+     * Line within the file that correspond to this `location`.
+     *
+     * Note that in addition to a positive value, the values `0` and `-1`
+     * are to be expected by consumers. A value of `0` means that the code
+     * is not attributable to a specific line in the file, e.g. module-specific
+     * generated code, and `-1` means that no debug info could be found.
+     */
+    int line = -1;
+
+    /// Format this location into a human-readable string
+    void toString (scope void delegate(scope const char[]) sink) const
+    {
+        import core.demangle;
+
+        // If there's no file information, there shouldn't be any directory
+        // information. If there is we will simply ignore it.
+        if (this.file.length)
+        {
+            // Note: Sink needs to handle empty data
+            sink(this.directory);
+            // Only POSIX path because this module is not used on Windows
+            if (this.directory.length && this.directory[$ - 1] != '/')
+                sink("/");
+            sink(this.file);
+        }
+        else
+            // Most likely, no debug information
+            sink("??");
+
+        // Also no debug infos
+        if (this.line < 0)
+            sink(":?");
+        // Line can be 0, e.g. if the frame is in generated code
+        else if (this.line)
+        {
+            sink(":");
+            sink(signedToTempString(this.line));
+        }
+
+        char[1024] symbolBuffer = void;
+        // When execinfo style is used, procedure can be null if the format
+        // of the line cannot be read, but it generally should not happen
+        if (this.procedure.length)
+        {
+            sink(" ");
+            sink(demangle(this.procedure, symbolBuffer));
+        }
+
+        sink(" [0x");
+        sink(unsignedToTempString!16(cast(size_t) this.address));
+        sink("]");
+    }
 }
 
 int traceHandlerOpApplyImpl(const(void*)[] callstack, scope int delegate(ref size_t, ref const(char[])) dg)
@@ -117,70 +195,52 @@ else
     {
         // find address -> file, line mapping using dwarf debug_line
         Array!Location locations;
-        if (debugLineSectionData)
-        {
-            locations.length = callstack.length;
-            foreach (size_t i; 0 .. callstack.length)
-                locations[i].address = callstack[i];
-
-            resolveAddresses(debugLineSectionData, locations[], image.baseAddress);
-        }
-
-        int ret = 0;
+        locations.length = callstack.length;
         foreach (size_t i; 0 .. callstack.length)
         {
-            char[1536] buffer = void;
-            size_t bufferLength = 0;
-
-            void appendToBuffer(Args...)(const(char)* format, Args args)
-            {
-                const count = snprintf(buffer.ptr + bufferLength, buffer.length - bufferLength, format, args);
-                assert(count >= 0);
-                bufferLength += count;
-                if (bufferLength >= buffer.length)
-                    bufferLength = buffer.length - 1;
-            }
-
-
-            if (locations.length > 0 && locations[i].line != -1)
-            {
-                bool includeSlash = locations[i].directory.length > 0 && locations[i].directory[$ - 1] != '/';
-                string printFormat = includeSlash ? "%.*s/%.*s:%d " : "%.*s%.*s:%d ";
-
-                appendToBuffer(
-                    printFormat.ptr,
-                    cast(int) locations[i].directory.length, locations[i].directory.ptr,
-                    cast(int) locations[i].file.length, locations[i].file.ptr,
-                    locations[i].line,
-                );
-            }
-            else
-            {
-                buffer[0 .. 5] = "??:? ";
-                bufferLength = 5;
-            }
-
-            char[1024] symbolBuffer = void;
-            auto symbol = getDemangledSymbol(frameList[i][0 .. strlen(frameList[i])], symbolBuffer);
-            if (symbol.length > 0)
-                appendToBuffer("%.*s ", cast(int) symbol.length, symbol.ptr);
-
-            const addressLength = 20;
-            const maxBufferLength = buffer.length - addressLength;
-            if (bufferLength > maxBufferLength)
-            {
-                buffer[maxBufferLength-4 .. maxBufferLength] = "... ";
-                bufferLength = maxBufferLength;
-            }
-            appendToBuffer("[%p]", callstack[i]);
-
-            auto output = buffer[0 .. bufferLength];
-            auto pos = i;
-            ret = dg(pos, output);
-            if (ret || symbol == "_Dmain") break;
+            locations[i].address = callstack[i];
+            locations[i].procedure = getMangledSymbolName(frameList[i][0 .. strlen(frameList[i])]);
         }
 
-        return ret;
+        if (debugLineSectionData)
+            resolveAddresses(debugLineSectionData, locations[], image.baseAddress);
+
+        char[1536] buffer = void;
+        size_t bufferLength;
+        scope sink = (scope const char[] data) {
+                // We cannot write anymore
+                if (bufferLength > buffer.length)
+                    return;
+
+                if (bufferLength + data.length > buffer.length)
+                {
+                    buffer[bufferLength .. $] = data[0 .. buffer.length - bufferLength];
+                    buffer[$ - 3 .. $] = "...";
+                    // +1 is a marker for the '...', otherwise if the symbol
+                    // name was to exactly fill the buffer,
+                    // we'd discard anything else without printing the '...'.
+                    bufferLength = buffer.length + 1;
+                    return;
+                }
+
+                buffer[bufferLength .. bufferLength + data.length] = data;
+                bufferLength += data.length;
+        };
+
+        foreach (idx, const ref loc; locations)
+        {
+            bufferLength = 0;
+            loc.toString(sink);
+
+            auto lvalue = buffer[0 .. bufferLength > $ ? $ : bufferLength];
+            if (auto ret = dg(idx, lvalue))
+                return ret;
+
+            if (loc.procedure == "_Dmain")
+                break;
+        }
+
+        return 0;
     }
 
     return image.isValid
@@ -482,13 +542,6 @@ bool runStateMachine(ref const(LineNumberProgram) lp, scope RunStateMachineCallb
     return true;
 }
 
-const(char)[] getDemangledSymbol(const(char)[] btSymbol, return ref char[1024] buffer)
-{
-    import core.demangle;
-    const mangledName = getMangledSymbolName(btSymbol);
-    return !mangledName.length ? buffer[0..0] : demangle(mangledName, buffer[]);
-}
-
 T read(T)(ref const(ubyte)[] buffer) @nogc nothrow
 {
     version (X86)         enum hasUnalignedLoads = true;
@@ -507,6 +560,78 @@ T read(T)(ref const(ubyte)[] buffer) @nogc nothrow
 
     buffer = buffer[T.sizeof .. $];
     return result;
+}
+
+/**
+ * Reads an ULEB128 length and then reads the followings bytes specified by the
+ * length.
+ *
+ * Params:
+ *      buffer = buffer where the data is read from
+ * Returns:
+ *      Value contained in the block.
+ */
+ulong readBlock(ref const(ubyte)[] buffer) @nogc nothrow
+{
+    ulong length = buffer.readULEB128();
+    assert(length <= ulong.sizeof);
+
+    ulong block;
+    foreach (i; 0 .. length)
+    {
+        ubyte b = buffer.read!ubyte;
+        block <<= 8 * i;
+        block |= b;
+    }
+
+    return block;
+}
+
+/**
+ * Reads a MD5 hash from the `buffer`.
+ *
+ * Params:
+ *      buffer = buffer where the data is read from
+ * Returns:
+ *      A MD5 hash
+ */
+char[16] readMD5(ref const(ubyte)[] buffer) @nogc nothrow
+{
+    assert(buffer.length >= 16);
+
+    ubyte[16] bytes;
+    foreach (h; 0 .. 16)
+        bytes[h] = buffer.read!ubyte;
+
+    return cast(char[16])bytes;
+}
+
+/**
+ * Reads a null-terminated string from `buffer`.
+ * The string is not removed from buffer and doesn't contain the last null byte.
+ *
+ * Params:
+ *      buffer = buffer where the data is read from
+ *
+ * Returns:
+ *      A string
+ */
+const(char)[] readString(ref const(ubyte)[] buffer) @nogc nothrow
+{
+    import core.sys.posix.string : strnlen;
+
+    return cast(const(char)[])buffer[0 .. strnlen(cast(char*)buffer.ptr, buffer.length)];
+}
+
+unittest
+{
+    const(ubyte)[] data = [0x48, 0x61, 0x76, 0x65, 0x20, 0x61, 0x20, 0x67, 0x6f,
+        0x6f, 0x64, 0x20, 0x64, 0x61, 0x79, 0x20, 0x21, 0x00];
+    const(char)[] result = data.readString();
+    assert(result == "Have a good day !");
+
+    data = [0x00];
+    assert(data.readString == null);
 }
 
 ulong readULEB128(ref const(ubyte)[] buffer) @nogc nothrow
@@ -555,6 +680,148 @@ long readSLEB128(ref const(ubyte)[] buffer) @nogc nothrow
     return val;
 }
 
+Array!EntryFormatData readEntryFormat(ref const(ubyte)[] buffer, ref Array!ulong entryFormat) @nogc nothrow
+{
+    // The count needs to be pair, as the specification says
+    assert(entryFormat.length % 2 == 0);
+    Array!EntryFormatData result;
+
+    for (uint i = 0; i < entryFormat.length; i += 2)
+    {
+        EntryFormatData efdata;
+        ulong form = entryFormat[i + 1];
+
+        switch (entryFormat[i])
+        {
+            case StandardContentDescription.path:
+                if (form == FormEncoding._string)
+                    efdata.path = buffer.readString();
+                else
+                {
+                    size_t offset = buffer.read!size_t;
+
+                    // TODO: set filename.path to the string at offset
+                    static if (0)
+                    {
+                        if (form == FormEncoding.line_strp) // Offset in debug_line_str
+                        {
+
+                        }
+                        else if (form == FormEncoding.strp) // Offset in debug_str
+                        {
+
+                        }
+                        else if (form == FormEncoding.strp_sup) // Offset of debug_str in debug_info
+                        {
+
+                        }
+                        else
+                            assert(0);
+                    }
+                    else
+                        assert(0);
+                }
+                break;
+
+            case StandardContentDescription.directoryIndex:
+                if (form == FormEncoding.data1)
+                    efdata.directoryIndex = cast(ulong)buffer.read!ubyte;
+                else if (form == FormEncoding.data2)
+                    efdata.directoryIndex = cast(ulong)buffer.read!ushort;
+                else if (form == FormEncoding.udata)
+                    efdata.directoryIndex = buffer.readULEB128();
+                else
+                    assert(0);
+                break;
+
+            case StandardContentDescription.timeStamp:
+                if (form == FormEncoding.udata)
+                    efdata.timeStamp = buffer.readULEB128();
+                else if (form == FormEncoding.data4)
+                    efdata.timeStamp = cast(ulong)buffer.read!uint;
+                else if (form == FormEncoding.data8)
+                    efdata.timeStamp = buffer.read!ulong;
+                else if (form == FormEncoding.block)
+                    efdata.timeStamp = buffer.readBlock();
+                else
+                    assert(0);
+                break;
+
+            case StandardContentDescription.size:
+                if (form == FormEncoding.data1)
+                    efdata.size = cast(ulong)buffer.read!ubyte;
+                else if (form == FormEncoding.data2)
+                    efdata.size = cast(ulong)buffer.read!ushort;
+                else if (form == FormEncoding.data4)
+                    efdata.size = cast(ulong)buffer.read!uint;
+                else if (form == FormEncoding.data8)
+                    efdata.size = buffer.read!ulong;
+                else
+                    assert(0);
+                break;
+
+            case StandardContentDescription.md5:
+                if (form == FormEncoding.data16)
+                    efdata.md5 = buffer.readMD5();
+                else
+                    assert(0);
+                break;
+
+            default:
+                assert(0);
+        }
+        result.insertBack(efdata);
+    }
+    return result;
+}
+
+enum FormEncoding : ubyte
+{
+    addr = 1,
+    block2 = 3,
+    block4 = 4,
+    data2 = 5,
+    data4 = 6,
+    data8 = 7,
+    _string = 8,
+    block = 9,
+    block1 = 10,
+    data1 = 11,
+    flag = 12,
+    sdata = 13,
+    strp = 14,
+    udata = 15,
+    ref_addr = 16,
+    ref1 = 17,
+    ref2 = 18,
+    ref4 = 19,
+    ref8 = 20,
+    ref_udata = 21,
+    indirect = 22,
+    sec_offset = 23,
+    exprloc = 24,
+    flag_present = 25,
+    strx = 26,
+    addrx = 27,
+    ref_sup4 = 28,
+    strp_sup = 29,
+    data16 = 30,
+    line_strp = 31,
+    ref_sig8 = 32,
+    implicit_const = 33,
+    loclistx = 34,
+    rnglistx = 35,
+    ref_sup8 = 36,
+    strx1 = 37,
+    strx2 = 38,
+    strx3 = 39,
+    strx4 = 40,
+    addrx1 = 41,
+    addrx2 = 42,
+    addrx3 = 43,
+    addrx4 = 44,
+}
+
 enum StandardOpcode : ubyte
 {
     extendedOp = 0,
@@ -578,6 +845,24 @@ enum ExtendedOpcode : ubyte
     setAddress = 2,
     defineFile = 3,
     setDiscriminator = 4,
+}
+
+enum StandardContentDescription : ubyte
+{
+    path = 1,
+    directoryIndex = 2,
+    timeStamp = 3,
+    size = 4,
+    md5 = 5,
+}
+
+struct EntryFormatData
+{
+    const(char)[] path;
+    ulong directoryIndex;
+    ulong timeStamp;
+    ulong size;
+    char[16] md5;
 }
 
 struct StateMachine
@@ -606,6 +891,8 @@ struct LineNumberProgram
 {
     ulong unitLength;
     ushort dwarfVersion;
+    ubyte addressSize;
+    ubyte segmentSelectorSize;
     ulong headerLength;
     ubyte minimumInstructionLength;
     ubyte maximumOperationsPerInstruction;
@@ -614,6 +901,17 @@ struct LineNumberProgram
     ubyte lineRange;
     ubyte opcodeBase;
     const(ubyte)[] standardOpcodeLengths;
+
+    ubyte directoryEntryFormatCount;
+    Array!ulong directoryEntryFormat;
+    ulong directoriesCount;
+    Array!EntryFormatData directories;
+
+    ubyte fileNameEntryFormatCount;
+    Array!ulong fileNameEntryFormat;
+    ulong fileNamesCount;
+    Array!EntryFormatData fileNames;
+
     Array!(const(char)[]) includeDirectories;
     Array!SourceFile sourceFiles;
     const(ubyte)[] program;
@@ -641,7 +939,13 @@ LineNumberProgram readLineNumberProgram(ref const(ubyte)[] data) @nogc nothrow
 
     const dwarfVersionFieldOffset = cast(size_t) (data.ptr - originalData.ptr);
     lp.dwarfVersion = data.read!ushort();
-    assert(lp.dwarfVersion < 5, "DWARF v5+ not supported yet");
+    assert(lp.dwarfVersion < 6, "DWARF v6+ not supported yet");
+
+    if (lp.dwarfVersion >= 5)
+    {
+        lp.addressSize = data.read!ubyte();
+        lp.segmentSelectorSize = data.read!ubyte();
+    }
 
     lp.headerLength = (is64bitDwarf ? data.read!ulong() : data.read!uint());
 
@@ -656,6 +960,24 @@ LineNumberProgram readLineNumberProgram(ref const(ubyte)[] data) @nogc nothrow
 
     lp.standardOpcodeLengths = data[0 .. lp.opcodeBase - 1];
     data = data[lp.opcodeBase - 1 .. $];
+
+    if (lp.dwarfVersion >= 5)
+    {
+        lp.directoryEntryFormatCount = data.read!ubyte();
+        foreach (c; 0 .. lp.directoryEntryFormatCount)
+            lp.directoryEntryFormat.insertBack(data.readULEB128());
+
+        lp.directoriesCount = data.readULEB128();
+        lp.directories = data.readEntryFormat(lp.directoryEntryFormat);
+
+
+        lp.fileNameEntryFormatCount = data.read!ubyte;
+        foreach (c; 0 .. lp.fileNameEntryFormatCount)
+            lp.fileNameEntryFormat.insertBack(data.readULEB128());
+
+        lp.fileNamesCount = data.readULEB128();
+        lp.fileNames = data.readEntryFormat(lp.fileNameEntryFormat);
+    }
 
     // A sequence ends with a null-byte.
     static auto readSequence(alias ReadEntry)(ref const(ubyte)[] data)

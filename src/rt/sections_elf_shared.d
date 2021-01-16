@@ -84,8 +84,8 @@ import core.sys.posix.pthread;
 import rt.deh;
 import rt.dmain2;
 import rt.minfo;
-import rt.util.container.array;
-import rt.util.container.hashtab;
+import core.internal.container.array;
+import core.internal.container.hashtab;
 import rt.util.utility : safeAssert;
 
 alias DSO SectionGroup;
@@ -333,6 +333,7 @@ else
     void finiTLSRanges(Array!(void[])* rngs) nothrow @nogc
     {
         rngs.reset();
+        .free(rngs);
     }
 
     void scanTLSRanges(Array!(void[])* rngs, scope ScanDG dg) nothrow
@@ -416,7 +417,13 @@ else
      * Thread local array that contains TLS memory ranges for each
      * library initialized in this thread.
      */
-    @property ref Array!(void[]) _tlsRanges() @nogc nothrow { static Array!(void[]) x; return x; }
+    @property ref Array!(void[]) _tlsRanges() @nogc nothrow {
+        static Array!(void[])* x = null;
+        if (x is null)
+            x = cast(Array!(void[])*).calloc(1, Array!(void[]).sizeof);
+        safeAssert(x !is null, "Failed to allocate TLS ranges");
+        return *x;
+    }
     //Array!(void[]) _tlsRanges;
 
     enum _rtLoading = false;

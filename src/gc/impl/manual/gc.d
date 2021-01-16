@@ -23,11 +23,14 @@
  *    (See accompanying file LICENSE or copy at
  *          http://www.boost.org/LICENSE_1_0.txt)
  */
+
 module gc.impl.manual.gc;
+
+//FIXME: need way to enable/disable compiling GC engines
 
 import core.gc.gcinterface;
 
-import rt.util.container.array;
+import core.internal.container.array;
 
 import cstdlib = core.stdc.stdlib : calloc, free, malloc, realloc;
 static import core.memory;

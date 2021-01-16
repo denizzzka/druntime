@@ -165,7 +165,7 @@ struct ModuleGroup
     void sortCtors(string cycleHandling)
     {
         import core.bitop : bts, btr, bt, BitRange;
-        import rt.util.container.hashtab;
+        import core.internal.container.hashtab;
 
         enum OnCycle
         {
@@ -516,13 +516,21 @@ struct ModuleGroup
         if (!doSort(MIctor | MIdtor, _ctors) ||
             !doSort(MItlsctor | MItlsdtor, _tlsctors))
         {
-            // print a warning
-            import core.stdc.stdio : fprintf, stderr;
-            fprintf(stderr, "Deprecation 16211 warning:\n"
-                ~ "A cycle has been detected in your program that was undetected prior to DMD\n"
-                ~ "2.072. This program will continue, but will not operate when using DMD 2.074\n"
-                ~ "to compile. Use runtime option --DRT-oncycle=print to see the cycle details.\n");
+            version(DruntimeAbstractRt)
+            {
+                import external.rt.sections : ctorsDtorsWarning;
 
+                ctorsDtorsWarning();
+            }
+            else
+            {
+                // print a warning
+                import core.stdc.stdio : fprintf, stderr;
+                fprintf(stderr, "Deprecation 16211 warning:\n"
+                    ~ "A cycle has been detected in your program that was undetected prior to DMD\n"
+                    ~ "2.072. This program will continue, but will not operate when using DMD 2.074\n"
+                    ~ "to compile. Use runtime option --DRT-oncycle=print to see the cycle details.\n");
+            }
         }
     }
 
@@ -566,7 +574,7 @@ struct ModuleGroup
         }
 
         auto stack = (cast(StackRec*).calloc(len, StackRec.sizeof))[0 .. len];
-        // TODO: reuse GCBits by moving it to rt.util.container or core.internal
+        // TODO: reuse GCBits by moving it to core.internal.container
         immutable nwords = (len + 8 * size_t.sizeof - 1) / (8 * size_t.sizeof);
         auto ctorstart = cast(size_t*).malloc(nwords * size_t.sizeof);
         auto ctordone = cast(size_t*).malloc(nwords * size_t.sizeof);

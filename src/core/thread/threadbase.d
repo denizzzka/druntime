@@ -356,7 +356,7 @@ class ThreadBase
             import core.exception: onOutOfMemoryError;
 
             auto newBuf = cast(ThreadBase*)realloc(buf.ptr, nlen * size_t.sizeof);
-            if(newBuf is null) onOutOfMemoryError();
+            if (newBuf is null) onOutOfMemoryError();
             buf = newBuf[0 .. nlen];
         }
         auto buf = getAllImpl!resize;
@@ -754,7 +754,7 @@ package(core.thread):
 // GC Support Routines
 ///////////////////////////////////////////////////////////////////////////////
 
-private alias attachThread = externDFunc!("core.thread.osthread.attachThread", ThreadBase function(ThreadBase) @nogc);
+private alias attachThread = externDFunc!("core.thread.osthread.attachThread", ThreadBase function(ThreadBase) @nogc nothrow);
 
 extern (C) void _d_monitordelete_nogc(Object h) @nogc;
 
@@ -969,9 +969,9 @@ public /*FIXME: package*/ __gshared bool multiThreadedFlag = false;
 public /*FIXME: package*/ __gshared uint suspendDepth = 0;
 
 version(DruntimeAbstractRt)
-    private alias resume = externDFunc!("external.core.thread.resume", void function(ThreadBase) nothrow);
+    private alias resume = externDFunc!("external.core.thread.resume", void function(ThreadBase) nothrow @nogc);
 else
-    private alias resume = externDFunc!("core.thread.osthread.resume", void function(ThreadBase) nothrow);
+    private alias resume = externDFunc!("core.thread.osthread.resume", void function(ThreadBase) nothrow @nogc);
 
 /**
  * Resume all threads but the calling thread for "stop the world" garbage

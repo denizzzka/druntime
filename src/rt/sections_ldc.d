@@ -76,7 +76,7 @@ struct SectionGroup
 private:
     ModuleGroup _moduleGroup;
 
-    import rt.util.container.array;
+    import core.internal.container.array;
     public Array!(void[]) _gcRanges;
 
     version (Solaris)
