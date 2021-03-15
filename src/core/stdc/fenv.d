@@ -49,6 +49,11 @@ version (MinGW)
 version (CRuntime_Glibc)
     version = GNUFP;
 
+version (CRuntime_Abstract)
+{
+    public import external.libc.stddef : fenv_t, fexcept_t;
+}
+else
 version (GNUFP)
 {
     // https://sourceware.org/git/?p=glibc.git;a=blob;f=sysdeps/x86/fpu/bits/fenv.h
@@ -792,6 +797,11 @@ else
 
 }
 
+version (CRuntime_Abstract)
+{
+    public import external.libc.stddef : FE_DFL_ENV;
+}
+else
 version (GNUFP)
 {
     ///

@@ -37,6 +37,7 @@ src = [
     'src/core/thread/types.d',
     'src/core/thread/context.d',
     'src/core/thread/package.d',
+    'src/core/stdc/fenv.d',
     'src/core/stdc/errno.d',
     'src/core/stdc/stdint.d',
     'src/core/stdc/stdio.d',
